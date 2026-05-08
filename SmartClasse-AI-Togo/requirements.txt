@@ -1,0 +1,50 @@
+# EduPath AI — Python Dependencies
+# Python 3.10+
+
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# LLM & AI
+ollama==0.6.2  # Gemma 4 local via Ollama
+huggingface-hub==0.19.4
+transformers==4.35.2
+torch==2.6.0  # CPU or CUDA based on system
+torchaudio==2.6.0  # For audio processing
+
+# Audio Processing (Multimodal)
+librosa==0.10.0  # Audio feature extraction
+soundfile==0.12.1  # WAV/FLAC handling
+numpy==1.24.3
+scipy==1.11.4
+
+# Speech Recognition & Synthesis
+openai-whisper==20231117  # ASR en 99+ langues
+pyttsx3==2.90  # Text-to-speech offline
+lang-detect==1.0.9  # Language detection
+
+# Database & Storage
+sqlalchemy==2.0.23  # ORM
+sqlite3-python==1.0.0  # SQLite handler
+cryptography==41.0.7  # AES-256 encryption
+
+# Utilities
+python-multipart==0.0.6  # File upload support
+requests==2.31.0  # HTTP client
+python-dotenv==1.0.0  # Environment variables
+loguru==0.7.2  # Logging
+
+# Development & Testing
+pytest==7.4.3
+black==23.12.0  # Code formatting
+flake8==6.1.0  # Linting
+mypy==1.7.1  # Type checking
+
+# Gemma 4 Specific (Optional - if not using Ollama)
+google-generativeai==0.3.0  # Gemini API (backup)
+llama-cpp-python==0.2.27  # llama.cpp for Gemma 4 E2B/E4B
+
+# Optional: For Hugging Face Spaces deployment
+gradio==4.19.2  # Web UI (alternative to FastAPI)
