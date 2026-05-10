@@ -13,6 +13,11 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _is_memory_pressure_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "more system memory" in message or "insufficient memory" in message
+
+
 def call_chat(
     messages: List[Dict[str, str]],
     model: Optional[str] = None,
@@ -43,6 +48,8 @@ def call_chat(
         except Exception as exc:
             last_exc = exc
             logger.warning("LLM call attempt %s failed: %s", attempt, exc)
+            if _is_memory_pressure_error(exc):
+                break
             if attempt <= retries:
                 backoff = 0.5 * (2 ** (attempt - 1))
                 time.sleep(backoff)

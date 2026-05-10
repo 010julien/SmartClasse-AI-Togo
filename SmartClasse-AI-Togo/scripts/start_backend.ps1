@@ -6,11 +6,11 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$python = Join-Path $repoRoot 'venv\Scripts\python.exe'
 $healthUrl = "http://$BindHost`:$Port/health"
+$composeFile = Join-Path $repoRoot 'docker-compose.yml'
 
-if (-not (Test-Path $python)) {
-    throw "Python introuvable dans le venv: $python"
+if (-not (Test-Path $composeFile)) {
+    throw "docker-compose.yml introuvable: $composeFile"
 }
 
 $listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -27,30 +27,41 @@ if ($listener) {
     }
 }
 
-Write-Host "Démarrage du backend SmartClasse sur $healthUrl"
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    throw "Docker n'est pas disponible dans le PATH. Installez Docker Desktop avant de lancer le backend."
+}
+
+try {
+    docker info | Out-Null
+} catch {
+    throw "Le démon Docker n'est pas disponible. Démarrez Docker Desktop puis relancez ce script."
+}
+
+Write-Host "Démarrage du backend SmartClasse via Docker sur $healthUrl"
 
 $arguments = @(
-    '-m', 'uvicorn', 'src.main:app',
-    '--host', $BindHost,
-    '--port', $Port
+    'compose',
+    '-f', $composeFile,
+    'up',
+    '--build',
+    '-d',
+    'backend'
 )
 
-$process = Start-Process -FilePath $python -ArgumentList $arguments -WorkingDirectory $repoRoot -PassThru
+& docker @arguments
 
-for ($attempt = 1; $attempt -le 30; $attempt++) {
-    Start-Sleep -Milliseconds 500
+for ($attempt = 1; $attempt -le 60; $attempt++) {
+    Start-Sleep -Milliseconds 1000
     try {
         $health = Invoke-RestMethod -Uri $healthUrl -Method Get -TimeoutSec 2
         Write-Host ("Backend prêt: {0}" -f ($health | ConvertTo-Json -Compress))
         exit 0
     } catch {
-        if ($process.HasExited) {
-            throw "Le processus uvicorn s'est arrêté prématurément avec le code $($process.ExitCode)."
-        }
+        continue
     }
 }
 
 Write-Host "Le backend a été lancé mais n'a pas répondu dans le délai attendu."
-Write-Host "Vérifiez la fenêtre Uvicorn ou relancez manuellement:"
-Write-Host "  $python -m uvicorn src.main:app --host $BindHost --port $Port"
+Write-Host "Vérifiez les logs Docker avec:"
+Write-Host "  docker compose -f `"$composeFile`" logs -f backend"
 exit 1

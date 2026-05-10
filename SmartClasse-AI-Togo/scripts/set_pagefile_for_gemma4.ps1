@@ -1,7 +1,7 @@
 param(
     [int]$InitialSizeMB = 16384,
     [int]$MaximumSizeMB = 32768,
-    [string]$PageFilePath = "C:\\pagefile.sys"
+    [string]$PageFilePath = "C:\pagefile.sys"
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,8 +31,10 @@ function Ensure-Admin {
 }
 
 function Set-PageFileConfiguration {
+    $normalizedPath = [System.IO.Path]::GetFullPath($PageFilePath)
+
     Write-Host "Configuration pagefile pour Gemma 4 e4b..." -ForegroundColor Cyan
-    Write-Host "Initial: $InitialSizeMB MB | Max: $MaximumSizeMB MB | Fichier: $PageFilePath"
+    Write-Host "Initial: $InitialSizeMB MB | Max: $MaximumSizeMB MB | Fichier: $normalizedPath"
 
     $cs = Get-CimInstance -ClassName Win32_ComputerSystem
     if ($cs.AutomaticManagedPagefile) {
@@ -40,23 +42,24 @@ function Set-PageFileConfiguration {
         Set-CimInstance -InputObject $cs -Property @{ AutomaticManagedPagefile = $false } | Out-Null
     }
 
-    $escapedPath = $PageFilePath.Replace("\\", "\\\\")
-    $existing = Get-CimInstance -ClassName Win32_PageFileSetting -Filter "Name = '$escapedPath'" -ErrorAction SilentlyContinue
+    $existing = Get-CimInstance -ClassName Win32_PageFileSetting -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ieq $normalizedPath } |
+        Select-Object -First 1
 
     if (-not $existing) {
         Write-Host "Creation de l'entree pagefile..."
         $new = New-CimInstance -ClassName Win32_PageFileSetting -Property @{
-            Name = $PageFilePath
-            InitialSize = $InitialSizeMB
-            MaximumSize = $MaximumSizeMB
+            Name = [string]$normalizedPath
+            InitialSize = [uint32]$InitialSizeMB
+            MaximumSize = [uint32]$MaximumSizeMB
         }
         $existing = $new
     }
 
     Write-Host "Mise a jour des tailles du pagefile..."
     Set-CimInstance -InputObject $existing -Property @{
-        InitialSize = $InitialSizeMB
-        MaximumSize = $MaximumSizeMB
+        InitialSize = [uint32]$InitialSizeMB
+        MaximumSize = [uint32]$MaximumSizeMB
     } | Out-Null
 
     Write-Host "\nConfiguration appliquee. Verification:" -ForegroundColor Green

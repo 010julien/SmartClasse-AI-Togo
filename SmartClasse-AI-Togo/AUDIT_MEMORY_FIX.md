@@ -13,18 +13,21 @@
 ## ✅ Solution Implémentée
 
 ### Étape 1: Changement de Modèle
+
 - **Avant**: `gemma4:e4b` (9.6GB, needs 11.9GB runtime)
 - **Après**: `gemma2:latest` (~5.4GB, needs ~7GB runtime)
 - **Fichier modifié**: [src/config.py](src/config.py#L17)
 - **Changement**: `LLM_MODEL = "gemma2:latest"`
 
 ### Étape 2: Téléchargement du Modèle
+
 - Commande: `ollama pull gemma2:latest`
 - Taille: 5.4 GB
 - Temps estimé: 15-20 minutes (selon débit)
 - **Status**: EN COURS (2% complété à 2026-05-10 14:45 UTC)
 
 ### Étape 3: Redémarrage du Backend
+
 - Arrêter le backend actuel (CTRL+C sur terminal)
 - Relancer: `uvicorn src.main:app --host 127.0.0.1 --port 8010`
 - Le nouveau modèle sera utilisé automatiquement
@@ -33,15 +36,16 @@
 
 ## 📊 Comparaison Modèles
 
-| Modèle | Taille | RAM Requis | Qualité | Raison du Choix |
-|--------|--------|-----------|---------|-----------------|
-| Gemma 4 e4b | 9.6GB | **11.9GB** ❌ | Excellente | Trop lourd |
-| Gemma 4 31B | 19.9GB | ~24GB | Excellente | Beaucoup trop lourd |
-| **Gemma 2** | 5.4GB | **~7GB** ✅ | Très Bonne | **OPTIMAL** |
-| Mistral 7B | 4.1GB | ~6GB | Très Bonne | Alternative |
-| Neural Chat 7B | 4.1GB | ~6GB | Bonne | Alternative légère |
+| Modèle         | Taille | RAM Requis    | Qualité    | Raison du Choix     |
+| -------------- | ------ | ------------- | ---------- | ------------------- |
+| Gemma 4 e4b    | 9.6GB  | **11.9GB** ❌ | Excellente | Trop lourd          |
+| Gemma 4 31B    | 19.9GB | ~24GB         | Excellente | Beaucoup trop lourd |
+| **Gemma 2**    | 5.4GB  | **~7GB** ✅   | Très Bonne | **OPTIMAL**         |
+| Mistral 7B     | 4.1GB  | ~6GB          | Très Bonne | Alternative         |
+| Neural Chat 7B | 4.1GB  | ~6GB          | Bonne      | Alternative légère  |
 
 **Gemma 2 choisi car**:
+
 - ✅ S'adapte au RAM disponible (~7-8GB)
 - ✅ Qualité conversationnelle très proche de Gemma 4
 - ✅ Optimisé pour education/tutoring
@@ -84,6 +88,7 @@ Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8010/agents/linguix/chat' 
 ## 📈 Amélioration de Performance
 
 ### Avant (Gemma 4 - OOM)
+
 ```
 Status: ❌ FAILED
 Error: model requires more system memory
@@ -93,6 +98,7 @@ Time: 44s+ (all attempts)
 ```
 
 ### Après (Gemma 2 - Optimisé)
+
 ```
 Status: ✅ SUCCESS (Prévision)
 Memory Usage: ~7GB (fits!)
@@ -132,12 +138,14 @@ Response should have: reasoning_info with 4+ steps
 ## 📝 Logs Clés
 
 ### Avant
+
 ```
 WARNING: LLM call attempt 1 failed: model requires more system memory (11.9 GiB) than is available (7.5 GiB)
 ERROR: LLM error on attempt 1: model requires more system memory (11.9 GiB)
 ```
 
 ### Après (Attendu)
+
 ```
 INFO: LLM call attempt 1/3
 INFO: Model: gemma2:latest loaded successfully
@@ -161,17 +169,20 @@ INFO: Response complete | Total: 3121ms
 ## 🎯 Prochaines Actions
 
 **Immédiat (Maintenant)**:
+
 - ⏳ Attendre fin du download Gemma 2
 - ✅ Changer config.py (FAIT)
 - ⏳ Relancer backend
 
 **À Court Terme (Prochaine session)**:
+
 - [ ] Tester endpoint `/agents/linguix/chat` avec request premium
 - [ ] Valider quality_score >= 85/100
 - [ ] Vérifier temps de réponse < 3s
 - [ ] Tester avec Flutter client
 
 **À Moyen Terme**:
+
 - [ ] Fine-tuner thresholds qualité pour Gemma 2
 - [ ] Mesurer satisfaction utilisateurs
 - [ ] Optimiser prompts si nécessaire
@@ -199,6 +210,7 @@ INFO: Response complete | Total: 3121ms
 Le problème était **environnemental, pas architectural**. Le système LINGUIX Premium fonctionne correctement; il avait simplement besoin d'un modèle adapté à la mémoire disponible.
 
 **Gemma 2 offre un excellent compromis**:
+
 - 🟢 Qualité conversationnelle premium
 - 🟢 Inference rapide
 - 🟢 Mémoire efficace

@@ -9,7 +9,7 @@ Client mobile Flutter pour discuter avec l'agent SmartClasse en:
 ## Prerequis
 
 - Flutter SDK installe
-- Backend FastAPI SmartClasse en cours d'execution sur `:8010`
+- Backend FastAPI SmartClasse en cours d'execution sur `:8010` via Docker Compose
 
 ### Lancer le backend avant Flutter
 

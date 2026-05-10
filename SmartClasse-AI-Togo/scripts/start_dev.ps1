@@ -14,7 +14,7 @@ if (-not (Test-Path $backendScript)) {
 }
 
 Write-Host "== SmartClasse dev launcher =="
-Write-Host "1) Démarrage du backend"
+Write-Host "1) Démarrage du backend via Docker"
 
 & $backendScript -Port $Port -BindHost $BindHost
 

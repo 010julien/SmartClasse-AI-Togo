@@ -24,16 +24,16 @@ source .venv/bin/activate   # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
-2. Démarrer le backend :
+2. Démarrer le backend via Docker :
 
 ```powershell
 .\scripts\start_backend.ps1
 ```
 
-Ou manuellement:
+Ou directement avec Docker Compose:
 
-```bash
-python -m uvicorn src.main:app --reload --host 127.0.0.1 --port 8010
+```powershell
+docker compose up --build backend
 ```
 
 3. Ouvrir le client Flutter (optionnel) :
@@ -52,10 +52,17 @@ Pour enchaîner les deux étapes dans le bon ordre:
 Docker (backend)
 
 ```bash
-
 docker build -t smartclasse-ai-togo .
 docker run --rm -p 8000:8000 -e OLLAMA_BASE_URL=http://host.docker.internal:11434 smartclasse-ai-togo
 ```
+
+La voie recommandée est désormais Docker Compose, qui démarre aussi Ollama:
+
+```powershell
+docker compose up --build
+```
+
+Assurez-vous que Docker Desktop est lancé avant d'exécuter ces commandes.
 
 Si l'image n'existe pas encore en local, exécutez d'abord `docker build -t smartclasse-ai-togo .`, puis relancez `docker run`.
 
@@ -69,7 +76,7 @@ Docker Compose (backend + Ollama)
 docker compose up --build
 ```
 
-Le backend sera disponible sur `http://localhost:8000` et Ollama sur `http://localhost:11434`.
+Le backend sera disponible sur `http://localhost:8010` et Ollama sur `http://localhost:11434`.
 Pour précharger le modèle Gemma 4 avant de lancer le backend, exécutez:
 
 ```bash

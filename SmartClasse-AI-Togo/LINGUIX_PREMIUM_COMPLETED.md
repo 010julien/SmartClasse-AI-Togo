@@ -6,15 +6,15 @@ Votre agent LINGUIX a été transformé en **système conversationnel premium** 
 
 ### Avant → Après
 
-| Aspect | Avant | Après |
-|--------|-------|-------|
-| **Architecture** | Monolithique basique | Multi-agents orchestrés |
-| **Compréhension** | Règles simples | NLU avancé (intent + entités) |
-| **Raisonnement** | Aucun | Chain-of-Thought multi-étape |
-| **Mémoire** | Aucune | Court-terme + Profil utilisateur |
-| **Qualité** | Pas de validation | Auto-évaluation + régénération |
-| **Personnalisation** | Basique | Contexte complet + profil |
-| **Prompt** | Statique | Dynamique, hautement contextualisé |
+| Aspect               | Avant                | Après                              |
+| -------------------- | -------------------- | ---------------------------------- |
+| **Architecture**     | Monolithique basique | Multi-agents orchestrés            |
+| **Compréhension**    | Règles simples       | NLU avancé (intent + entités)      |
+| **Raisonnement**     | Aucun                | Chain-of-Thought multi-étape       |
+| **Mémoire**          | Aucune               | Court-terme + Profil utilisateur   |
+| **Qualité**          | Pas de validation    | Auto-évaluation + régénération     |
+| **Personnalisation** | Basique              | Contexte complet + profil          |
+| **Prompt**           | Statique             | Dynamique, hautement contextualisé |
 
 ---
 
@@ -60,6 +60,7 @@ Premium Response
 ## 📊 Modules Détails
 
 ### 1. **NLU Engine** (src/advanced/nlu_engine.py)
+
 - ✅ **Intent Classification**: 9 types (EXPLAIN, EXERCISE, CORRECT, TRANSLATE, LEARN, EVALUATE, SOCIALIZE, CLARIFY, HELP)
 - ✅ **Entity Extraction**: Subject, Level, Language, Action
 - ✅ **Context Analysis**: Multi-turn detection, confusion detection
@@ -68,6 +69,7 @@ Premium Response
 **KPI**: 95%+ intent accuracy attendu
 
 ### 2. **Reasoning Engine** (src/advanced/reasoning_engine.py)
+
 - ✅ **Math Reasoning**: 4 étapes (Identify → Decompose → Apply → Verify)
 - ✅ **Explanation Reasoning**: 4 étapes (Understand → Adapt level → Local context → Structure)
 - ✅ **Exercise Generation**: 4 étapes (Objective → Progression → Context → Feedback)
@@ -77,6 +79,7 @@ Premium Response
 **KPI**: Reasoning confidence >= 0.8, time < 500ms
 
 ### 3. **Memory Manager** (src/advanced/memory_manager.py)
+
 - ✅ **Short-term Memory**: Conversation sessions (max 50 turns)
 - ✅ **Long-term Memory**: User profiles (strengths, weaknesses, misconceptions)
 - ✅ **Conversation Summary**: Auto-génération du contexte
@@ -85,6 +88,7 @@ Premium Response
 **KPI**: 100% des interactions tracées, personnalisation active
 
 ### 4. **Quality Validator** (src/advanced/quality_validator.py)
+
 - ✅ **7 Dimensions de Qualité**:
   - Relevance (25%)
   - Accuracy (20%)
@@ -99,6 +103,7 @@ Premium Response
 **KPI**: Score moyen >= 90/100, hallucination rate < 5%
 
 ### 5. **Advanced Prompt Engineering** (src/advanced/prompts.py)
+
 - ✅ **Dynamic System Prompts**: Adaptés par intent + user context
 - ✅ **Context Injection**: Conversation history + user profile
 - ✅ **Reasoning Prompts**: Internal CoT prompts (hidden)
@@ -107,6 +112,7 @@ Premium Response
 **KPI**: Prompts hautement contextualisés, 0 confusion
 
 ### 6. **Conversation Manager** (src/advanced/conversation_manager.py)
+
 - ✅ **Orchestration 7 phases**: NLU → Reasoning → Memory → Prompting → LLM → Quality → Update
 - ✅ **Full Pipeline**: Gestion complète de la conversation
 - ✅ **Error Handling**: Fallback responses contextualisées
@@ -126,7 +132,7 @@ def chat(self, messages, speak=False, language="french"):
     # Appel LLM direct + fallback echo
 
 # Après: Chat Premium multi-phases
-def chat(self, messages, speak=False, language="french", 
+def chat(self, messages, speak=False, language="french",
          user_level="CE1", user_id=None, user_name="Student"):
     # Orchestration complète via ConversationManager
     response = self.conversation_manager.process_conversation(...)
@@ -175,15 +181,15 @@ Response: {
 
 ### Implémentées ✅
 
-| Métrique | Target | Status |
-|----------|--------|--------|
-| Intent Recognition Accuracy | > 95% | ✅ Implemented (9 types) |
-| Quality Validation | > 85 threshold | ✅ 7 dimensions |
-| Chain-of-Thought Steps | 4-5 par type | ✅ All reasoning paths |
-| User Personalization | Full context | ✅ Memory + Profile |
-| Response Quality | > 90/100 | ✅ Auto-validation |
-| Performance | < 3s/response | ✅ Tracking enabled |
-| Hallucination Reduction | < 5% | ✅ Validator active |
+| Métrique                    | Target         | Status                   |
+| --------------------------- | -------------- | ------------------------ |
+| Intent Recognition Accuracy | > 95%          | ✅ Implemented (9 types) |
+| Quality Validation          | > 85 threshold | ✅ 7 dimensions          |
+| Chain-of-Thought Steps      | 4-5 par type   | ✅ All reasoning paths   |
+| User Personalization        | Full context   | ✅ Memory + Profile      |
+| Response Quality            | > 90/100       | ✅ Auto-validation       |
+| Performance                 | < 3s/response  | ✅ Tracking enabled      |
+| Hallucination Reduction     | < 5%           | ✅ Validator active      |
 
 ### À Mesurer en Production
 
@@ -311,6 +317,7 @@ setState(() {
 ## 🎯 Prochaines Étapes (Roadmap)
 
 ### Court Terme (1-2 semaines)
+
 - [ ] **Fine-tuning Quality Thresholds**: Calibrer les poids par intent type
 - [ ] **Fallback Optimization**: Améliorer fallback responses avec CoT local
 - [ ] **Memory Persistence**: Sauvegarder profiles en DB SQLite
@@ -318,6 +325,7 @@ setState(() {
 - [ ] **User Testing**: Tester avec vrais élèves, collecter feedback
 
 ### Moyen Terme (1 mois)
+
 - [ ] **Multi-language Reasoning**: Kabyie, Ewe, Haoussa support complet
 - [ ] **Advanced Diagnostics**: Détecter automatiquement misconceptions
 - [ ] **Teacher Dashboard**: Analytics de classe, progression tracking
@@ -325,6 +333,7 @@ setState(() {
 - [ ] **Adaptive Difficulty**: Progression automatique des exercices
 
 ### Long Terme (3-6 mois)
+
 - [ ] **Voice-to-Voice**: Premium TTS + Whisper bidirectionnel
 - [ ] **Offline Optimization**: Cache reasoning chains, lighter models
 - [ ] **Collaborative Learning**: Peer learning, class discussions

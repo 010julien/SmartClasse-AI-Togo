@@ -288,7 +288,7 @@ print(f"Total time: {response.total_time_ms}ms")
 async def linguix_chat(request: dict):
     """
     Premium chat avec personnalisation complète.
-    
+
     Body:
     {
         "messages": [{"role":"user", "content":"..."}],
@@ -339,13 +339,13 @@ print(result['intent']);          // 'explain'
 
 ### Performance Attendues
 
-| Métrique | Target | Résultat |
-|----------|--------|----------|
-| Intent Accuracy | > 95% | Détection CoT |
-| Quality Score Moyen | > 90/100 | Auto-validation |
-| Avg Response Time | < 3s | Reasoning + LLM |
-| User Satisfaction | > 95% | ChatGPT-like |
-| Hallucination Rate | < 5% | Validation stricte |
+| Métrique            | Target   | Résultat           |
+| ------------------- | -------- | ------------------ |
+| Intent Accuracy     | > 95%    | Détection CoT      |
+| Quality Score Moyen | > 90/100 | Auto-validation    |
+| Avg Response Time   | < 3s     | Reasoning + LLM    |
+| User Satisfaction   | > 95%    | ChatGPT-like       |
+| Hallucination Rate  | < 5%     | Validation stricte |
 
 ### Logs et Debugging
 
@@ -366,6 +366,7 @@ logger.info(f"Total: {total_time_ms}ms (NLU: {nlu_time}ms + Reasoning: {reasonin
 **User**: "Je suis en CE1 et j'ai pas compris les fractions"
 
 **Pipeline**:
+
 1. **NLU**: Intent=EXPLAIN, Level=CE1, Subject=math
 2. **Reasoning**: 4 étapes → Adapter niveau → Contexte local → Structure logique
 3. **Memory**: Charge préférences CE1, ajoute "fractions" aux intérêts
@@ -379,6 +380,7 @@ logger.info(f"Total: {total_time_ms}ms (NLU: {nlu_time}ms + Reasoning: {reasonin
 **User**: "Donne-moi un exercice"
 
 **Pipeline**:
+
 1. **NLU**: Intent=EXERCISE, Context=conversation précédente
 2. **Reasoning**: Génération progressive → Contexte togolais → Feedback
 3. **Memory**: Récupère que l'élève maîtrise fractions basiques
@@ -427,7 +429,7 @@ python -m pytest tests/test_premium_linguix.py -v
 
 # Exemples:
 # ✓ test_nlu_engine.py
-# ✓ test_reasoning_engine.py  
+# ✓ test_reasoning_engine.py
 # ✓ test_memory_manager.py
 # ✓ test_quality_validator.py
 # ✓ test_conversation_manager.py
@@ -456,6 +458,6 @@ LINGUIX Premium transforme votre agent en **assistant conversationnel premium**:
 ✅ **Memory System**: Contexte + Profil utilisateur  
 ✅ **Quality Control**: Auto-validation + régénération  
 ✅ **Personalization**: Niveau + langue + préférences  
-✅ **Performance**: Optimisation Gemma 4 complète  
+✅ **Performance**: Optimisation Gemma 4 complète
 
 **Résultat**: Conversations comparables à **ChatGPT/Gemini**, 100% offline-capable. 🚀

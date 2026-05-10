@@ -6,7 +6,7 @@ HOST="${2:-127.0.0.1}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "== SmartClasse dev launcher =="
-echo "1) Démarrage du backend"
+echo "1) Démarrage du backend via Docker"
 "$REPO_ROOT/scripts/start_backend.sh" "$PORT" "$HOST"
 
 echo
