@@ -1,9 +1,9 @@
-# Makefile — Quick Commands for EduPath AI Development
+# Makefile — Quick Commands for SmartClasse AI Development
 
 .PHONY: help setup install test run clean demo gemma lint format
 
 help:
-	@echo "EduPath AI — Development Commands"
+	@echo "SmartClasse AI — Development Commands"
 	@echo "=================================="
 	@echo ""
 	@echo "Setup & Installation:"

@@ -4,34 +4,35 @@
 # Core Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==2.5.0
+pydantic==2.10.6
 pydantic-settings==2.1.0
 
 # LLM & AI
 ollama==0.6.2  # Gemma 4 local via Ollama
 huggingface-hub==0.19.4
 transformers==4.35.2
-torch==2.6.0  # CPU or CUDA based on system
-torchaudio==2.6.0  # For audio processing
+torch==2.11.0  # CPU or CUDA based on system
+torchaudio==2.11.0  # For audio processing
 
 # Audio Processing (Multimodal)
 librosa==0.10.0  # Audio feature extraction
 soundfile==0.12.1  # WAV/FLAC handling
-numpy==1.24.3
+numpy==1.26.4
 scipy==1.11.4
 
 # Speech Recognition & Synthesis
-openai-whisper==20231117  # ASR en 99+ langues
+openai-whisper==20250625  # Speech-to-text offline
+imageio-ffmpeg==0.6.0  # Bundled ffmpeg for Whisper on Windows
 pyttsx3==2.90  # Text-to-speech offline
-lang-detect==1.0.9  # Language detection
+langdetect==1.0.9  # Language detection
 
 # Database & Storage
 sqlalchemy==2.0.23  # ORM
-sqlite3-python==1.0.0  # SQLite handler
+# sqlite3 est inclus dans Python
 cryptography==41.0.7  # AES-256 encryption
 
 # Utilities
-python-multipart==0.0.6  # File upload support
+python-multipart==0.0.20  # File upload support
 requests==2.31.0  # HTTP client
 python-dotenv==1.0.0  # Environment variables
 loguru==0.7.2  # Logging

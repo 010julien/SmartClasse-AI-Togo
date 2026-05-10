@@ -1,0 +1,18 @@
+SmartClasse AI Togo - Third-Party Notice
+
+This repository includes third-party Python libraries listed in requirements.txt.
+It may also rely on external model files or runtime components that are not bundled in the source tree.
+
+Required submission details:
+
+- Team name: SmartClasse
+- Kaggle account: [replace-with-official-team-account]
+- Team members: [replace-with-full-member-list]
+
+External components to document before final submission:
+
+- Gemma 4 model source and usage terms: [fill in source]
+- Ollama runtime, if used locally: local install only, not bundled
+- llama.cpp or LiteRT fallback binaries/models: [fill in source and license]
+
+Keep this notice aligned with the competition rules and verify that every redistributable asset in the archive is allowed for submission.

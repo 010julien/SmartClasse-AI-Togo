@@ -14,9 +14,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # LLM Settings
-    LLM_MODEL: str = "gemma4:e4b"  # via Ollama
+    LLM_MODEL: str = "gemma4:e4b"  # via Ollama - Gemma 4 (optimized)
     LLM_TEMPERATURE: float = 0.3
-    LLM_MAX_TOKENS: int = 2048
+    LLM_MAX_TOKENS: int = 1024
     LLM_CONTEXT_WINDOW: int = 8192
     
     # Ollama Settings (if using Ollama instead of direct)
@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     ENABLE_PASSPORTIX: bool = True  # Competency passport
     ENABLE_EQUITIX: bool = True  # Girl dropout detection
     ENABLE_PARENTIX: bool = False  # SMS (requires SMS gateway)
+
+    # SMS / Parent communication
+    SMS_PROVIDER: str = "africastalking"
+    AFRICASTALKING_USERNAME: Optional[str] = None
+    AFRICASTALKING_API_KEY: Optional[str] = None
+    AFRICASTALKING_SENDER_ID: Optional[str] = None
+    DEFAULT_PARENT_SMS_LANGUAGE: str = "french"
     
     # Content
     MEPS_CURRICULUM_PATH: Optional[str] = "./data/meps_curriculum.json"

@@ -1,0 +1,11 @@
+.git
+.venv
+venv
+dist
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+flutter_client/build
+flutter_client/.dart_tool
+flutter_client/.idea
