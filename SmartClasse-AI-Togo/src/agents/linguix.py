@@ -8,6 +8,7 @@ import os
 import shutil
 import tempfile
 import uuid
+import numpy as np
 from typing import Any, Dict, List, Optional
 
 try:
@@ -23,6 +24,14 @@ from src.llm import call_chat
 from src.prompting import build_messages, extract_json
 from src.config import settings
 from src.advanced.conversation_manager import ConversationManager
+from src.modules.audio_input.vad import VADModule
+from src.modules.audio_input.asr import ASRModule
+from src.modules.audio_input.audio_normalizer import AudioNormalizer
+from src.modules.context.context_hub import ContextHub
+from src.modules.llm.gemma_engine import GemmaEngine
+from src.modules.audio_output.tts_engine import TTSEngine
+from src.modules.routing.channel_detector import ChannelDetector
+from src.modules.routing.output_router import OutputRouter
 
 try:
     import whisper  # type: ignore
@@ -51,10 +60,24 @@ class LinguixAgent:
     }
 
     def __init__(self):
+        # ASR / VAD / Normalizer
+        self.vad = VADModule(mode=3)
+        self.asr = ASRModule(engine="openai-whisper", model_size="base", device="cpu")
+        self.normalizer = AudioNormalizer(sample_rate=16000)
+
+        # Context hub
+        self.context_hub = ContextHub(session_id="global")
+
+        # LLM & TTS
+        self.gemma = GemmaEngine(model=settings.LLM_MODEL)
+        self.tts = TTSEngine()
+        self.channel_detector = ChannelDetector()
+        self.output_router = OutputRouter()
+
+        # Legacy/optional
         self.whisper_model = None
         self.whisper_model_name = "base"
         self.ollama_client = None
-        self.tts_engine = None
         self.gemma4_model = None
         self.language_model = None
         self.translation_memory = self._load_translation_memory()
@@ -353,7 +376,7 @@ Return ONLY the translated sentence, no commentary.
                 "status": "tts_unavailable",
             }
 
-    def chat(self, messages: List[Dict[str, str]], speak: bool = False, language: str = "french", user_level: str = "CE1", user_id: Optional[str] = None, user_name: str = "Student") -> Dict[str, Any]:
+    def chat(self, messages: List[Dict[str, str]], speak: bool = False, language: str = "french", user_level: str = "CE1", user_id: Optional[str] = None, user_name: str = "Student", channel: Optional[str] = None) -> Dict[str, Any]:
         """
         Premium chat interface using advanced ConversationManager.
         
@@ -373,7 +396,16 @@ Return ONLY the translated sentence, no commentary.
         self.session_counter += 1
         session_id = f"session_{uuid.uuid4().hex[:8]}"
         
-        logger.info(f"LINGUIX Premium Chat | Session: {session_id} | User: {user_name} | Level: {user_level}")
+        decision = self.channel_detector.detect(
+            messages=messages,
+            explicit_channel=channel,
+            speak=speak,
+            language_hint=language,
+        )
+
+        logger.info(
+            f"LINGUIX Premium Chat | Session: {session_id} | User: {user_name} | Level: {user_level} | Channel: {decision.channel}"
+        )
 
         try:
             # Use the premium conversation manager
@@ -403,6 +435,9 @@ Return ONLY the translated sentence, no commentary.
                 "quality_score": response.quality_score,
                 "reasoning_info": response.reasoning_chain,
                 "session_id": session_id,
+                "channel": decision.channel,
+                "channel_confidence": decision.confidence,
+                "channel_reason": decision.reason,
                 "performance": {
                     "reasoning_time_ms": response.reasoning_time_ms,
                     "total_time_ms": response.total_time_ms,
@@ -411,10 +446,14 @@ Return ONLY the translated sentence, no commentary.
             }
 
             # Generate audio if requested
-            if speak:
+            routed = self.output_router.route_voice(assistant_text, result.get("audio"), {"channel": decision.channel}) if decision.channel == "voice" else self.output_router.route_text(assistant_text, {"channel": decision.channel})
+
+            if speak or decision.audio_expected:
                 audio = self._generate_audio(assistant_text, language)
                 result.update({"audio_url": audio.get("audio_url"), "audio_path": audio.get("audio_path")})
+                routed = self.output_router.route_voice(assistant_text, audio, {"channel": decision.channel})
 
+            result.update(self.output_router.as_dict(routed))
             return result
 
         except Exception as exc:
@@ -587,140 +626,99 @@ Return ONLY the translated sentence, no commentary.
             "target_languages": target_languages,
         }
 
-    def _generate_audio(self, text: str, language: str) -> Dict[str, Any]:
-        logger.info(f"LINGUIX: Generating audio | Lang: {language} | Text: {text[:50]}...")
+    def chat_voice(
+        self,
+        audio_bytes: Optional[bytes] = None,
+        audio_path: Optional[str] = None,
+        language_hint: Optional[str] = None,
+        user_id: Optional[str] = None,
+        user_name: Optional[str] = None,
+        speak: bool = True,
+    ) -> Dict[str, Any]:
+        """Voice chat pipeline: VAD -> Normalizer -> ASR -> ContextHub -> Gemma -> TTS
 
+        Returns a dict similar to chat(): assistant_text, intent, quality_score, audio metadata when speak=True.
+        """
         try:
-            import pyttsx3  # type: ignore
+            # Load audio bytes if path provided
+            if audio_path and audio_bytes is None:
+                with open(audio_path, "rb") as f:
+                    audio_bytes = f.read()
 
-            audio_dir = os.path.join("data", "audio")
-            os.makedirs(audio_dir, exist_ok=True)
-            audio_name = f"{language}_{hashlib.sha1(text.encode('utf-8')).hexdigest()[:12]}.wav"
-            audio_path = os.path.join(audio_dir, audio_name)
+            if not audio_bytes:
+                return {"status": "error", "detail": "No audio provided"}
 
-            engine = pyttsx3.init()
-            engine.setProperty("rate", 150)
-            engine.save_to_file(text, audio_path)
-            engine.runAndWait()
+            # Normalize audio and convert to PCM16 bytes for WebRTC VAD compatibility.
+            norm = self.normalizer.process(audio_bytes)
+            audio_np = norm.get("audio")
+            sample_rate = int(norm.get("sample_rate") or 16000)
+            vad_input = audio_bytes
 
-            return {
-                "language": language,
-                "text": text,
-                "audio_url": f"/audio/{audio_name}",
-                "audio_path": audio_path,
-                "duration_seconds": max(1.0, len(text.split()) * 0.4),
-                "format": "WAV",
-                "sample_rate": 16000,
-                "channels": 1,
-            }
-        except Exception as exc:
-            logger.warning(f"LINGUIX: TTS fallback used | {exc}")
-            return {
-                "language": language,
-                "text": text,
-                "audio_url": None,
-                "duration_seconds": len(text.split()) * 0.4,
-                "format": "WAV",
-                "sample_rate": 16000,
-                "channels": 1,
-                "status": "tts_unavailable",
-            }
+            if isinstance(audio_np, np.ndarray) and audio_np.size > 0:
+                clipped = np.clip(audio_np, -1.0, 1.0)
+                vad_input = (clipped * 32767.0).astype(np.int16).tobytes()
 
-    def detect_language(self, text: str) -> Dict[str, Any]:
-        lowered = text.lower()
-        local_scores = {
-            "french": ["bonjour", "école", "élève", "fraction", "marché", "famille"],
-            "ewe": ["keka", "gbo", "sukulu", "dɔme", "miawo"],
-            "kabyie": ["ag-ar", "fed", "sorgho", "karité"],
-            "haoussa": ["makaranta", "kasuwa", "iyali", "karanta"],
-            "mina": ["sɔ", "sukulu", "agbadza"],
-            "tem": ["kpɔ", "gbɔ", "sɔ"],
-        }
-
-        best_language = "french"
-        best_score = -1
-        for language, keywords in local_scores.items():
-            score = sum(1 for keyword in keywords if keyword in lowered)
-            if score > best_score:
-                best_language = language
-                best_score = score
-
-        if detect is not None:
+            vad_failed = False
             try:
-                detected = detect(text)
-                if detected.startswith("fr"):
-                    best_language = "french"
-            except Exception:
-                pass
+                vad_result = self.vad.process(vad_input, sample_rate=sample_rate)
+            except Exception as exc:
+                # Continue with ASR when VAD cannot parse the frame format.
+                logger.warning(f"chat_voice: VAD failed, fallback to ASR | {exc}")
+                vad_failed = True
+                vad_result = None
 
-        alternatives = [
-            {"language": language, "confidence": 0.2 if language != best_language else 0.8}
-            for language in self.SUPPORTED_LANGUAGES
-            if language != best_language
-        ]
+            if not vad_failed and vad_result is not None and not vad_result.speech_detected:
+                return {"status": "no_speech", "detail": "No speech detected"}
 
-        return {
-            "detected_language": best_language,
-            "confidence": 0.85 if best_score >= 0 else 0.55,
-            "alternatives": alternatives[:2],
-        }
+            # ASR transcription
+            transcription = self.asr.transcribe(audio_bytes, language=language_hint, streaming=False)
+            user_text = transcription.text if transcription and transcription.text else ""
 
-    def get_supported_languages(self) -> Dict[str, Dict]:
-        return self.SUPPORTED_LANGUAGES
+            # Update context
+            sess = user_id or f"guest_{uuid.uuid4().hex[:8]}"
+            self.context_hub.add_turn(role="user", content=user_text, channel="voice")
 
-    def measure_french_progression(self, student_id: str, week_number: int) -> Dict[str, Any]:
-        french_percentage = min(20 + (week_number - 1) * 5, 80)
-        local_percentage = 100 - french_percentage
+            # Call Gemma via wrapper
+            messages = [{"role": "user", "content": user_text}]
+            try:
+                resp = self.gemma.generate(messages=messages, channel="voice", max_tokens=150, temperature=0.6)
+                # Ollama/call_chat returns dict with message.content
+                assistant_text = ""
+                if isinstance(resp, dict):
+                    assistant_text = resp.get("message", {}).get("content") or resp.get("message") or resp.get("result") or str(resp)
+                    if isinstance(assistant_text, dict):
+                        assistant_text = assistant_text.get("content", "")
+                    assistant_text = str(assistant_text).strip()
+                else:
+                    assistant_text = str(resp)
+            except Exception as e:
+                logger.warning(f"chat_voice: Gemma generate failed: {e}")
+                assistant_text = "Désolé, je ne peux pas répondre pour le moment."
 
-        return {
-            "student_id": student_id,
-            "week": week_number,
-            "language_mix": {
-                "french_percent": french_percentage,
-                "local_language_percent": local_percentage,
-            },
-            "recommendation": "increase_french" if week_number > 1 else "keep_current",
-        }
+            # Update memory with assistant turn
+            self.context_hub.add_turn(role="assistant", content=assistant_text, channel="voice")
 
-    def create_multilingual_exercise(
-        self,
-        exercise_dict: Dict,
-        primary_language: str,
-        include_languages: List[str] = None,
-    ) -> Dict[str, Any]:
-        if include_languages is None:
-            include_languages = ["french", primary_language]
-
-        multilingual_exercise = {"exercise_id": exercise_dict.get("exercise_id"), "languages": {}}
-        for lang in include_languages:
-            multilingual_exercise["languages"][lang] = {
-                "instruction": self._translate_via_gemma4(exercise_dict.get("instruction", ""), "french", lang),
-                "problem": self._translate_via_gemma4(exercise_dict.get("problem", ""), "french", lang),
-                "audio": self._generate_audio(exercise_dict.get("problem", ""), lang),
+            result = {
+                "assistant_text": assistant_text,
+                "transcription": {"text": user_text, "language": transcription.language if transcription else language_hint},
+                "session_id": sess,
+                "intent": "voice",
+                "channel": "voice",
+                "channel_confidence": 1.0,
+                "channel_reason": "audio_payload_present",
             }
 
-        logger.info(f"LINGUIX: Multilingual exercise created | Languages: {include_languages}")
-        return multilingual_exercise
+            # Generate audio if requested
+            if speak:
+                tts_meta = self.tts.synthesize(assistant_text)
+                result.update({"audio": tts_meta})
 
-    def voice_pipeline(
-        self,
-        audio_path: str,
-        target_languages: List[str],
-        source_language_hint: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        transcription = self.transcribe(audio_path, language_hint=source_language_hint)
-        detected_language = transcription.get("language_hint") or transcription.get("language_detected") or "french"
+            routed = self.output_router.route_voice_stream(assistant_text, result.get("audio"), {"channel": "voice"}) if speak else self.output_router.route_voice(assistant_text, result.get("audio"), {"channel": "voice"})
+            result.update(self.output_router.as_dict(routed))
 
-        translations = self.translate_instruction(
-            instruction=transcription.get("text", ""),
-            source_language=detected_language,
-            target_languages=target_languages,
-            audio_output=True,
-        )
+            return {"status": "success", "result": result}
 
-        return {
-            "transcription": transcription,
-            "translations": translations,
-            "source_language": detected_language,
-            "target_languages": target_languages,
-        }
+        except Exception as exc:
+            logger.error(f"chat_voice pipeline failed: {exc}", exc_info=True)
+            return {"status": "error", "detail": str(exc)}
+

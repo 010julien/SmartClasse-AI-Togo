@@ -5,7 +5,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ${USERPROFILE}/.ollama:/root/.ollama
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
@@ -23,7 +23,7 @@ services:
     entrypoint: ["ollama"]
     command: ["pull", "gemma4:e4b"]
     volumes:
-      - ollama_data:/root/.ollama
+      - ${USERPROFILE}/.ollama:/root/.ollama
 
   backend:
     build:
@@ -36,11 +36,12 @@ services:
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
       PORT: 8000
+      # Enable quantized local LLM (set to '1' to enable and mount models/ into the container)
+      USE_QUANTIZED_LLM: "0"
+      QUANTIZED_MODEL_PATH: "/app/models/gemma-4-9b-q4.gguf"
     ports:
       - "8010:8000"
     volumes:
       - ./:/app
+      - ./models:/app/models
     command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-volumes:
-  ollama_data:

@@ -1,0 +1,39 @@
+# Minimal requirements for running backend with local Ollama (CPU-focused)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.10.6
+pydantic-settings==2.1.0
+
+# Ollama client to call local Gemma 4
+ollama==0.6.2
+
+# Audio processing (keep lean)
+numpy==1.26.4
+soundfile==0.12.1
+librosa==0.10.0
+webrtcvad==2.0.10
+pydub==0.25.1
+imageio-ffmpeg==0.6.0
+noisereduce>=2.0.1
+
+# ASR (Whisper offline)
+openai-whisper==20250625
+
+# TTS
+pyttsx3==2.90
+
+# Database + utils
+sqlalchemy==2.0.23
+python-multipart==0.0.20
+requests==2.31.0
+python-dotenv==1.0.0
+loguru==0.7.2
+
+# Optional/advanced (only if you want local quantized LLM fallback)
+# llama-cpp-python==0.2.27
+
+# Dev/test tools (install separately)
+# pytest==7.4.3
+# black==23.12.0
+# flake8==6.1.0
+# mypy==1.7.1

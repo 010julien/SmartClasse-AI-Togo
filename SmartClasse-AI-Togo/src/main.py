@@ -5,10 +5,11 @@ import os
 import tempfile
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 
 from src.agents.adaptix import AdaptixAgent
 from src.agents.diagnostix import DiagnostixAgent
@@ -187,30 +188,62 @@ async def linguix_transcribe(file: UploadFile = File(...), language_hint: str = 
 
 
 @app.post("/agents/linguix/chat")
-async def linguix_chat(request: dict):
-    """Proxy chat endpoint to LINGUIX Premium: Natural, contextual, reasoning-powered conversations.
+async def linguix_chat(
+    request: Request,
+    file: UploadFile = File(None),
+    language: str = Form(default=None),
+    speak: bool = Form(default=None),
+    user_level: str = Form(default=None),
+    user_id: str = Form(default=None),
+    user_name: str = Form(default=None),
+    messages: str = Form(default=None),
+):
+    """Chat endpoint that supports JSON requests and multipart audio uploads.
 
-    Body JSON: {
-        "messages": [{"role":"user","content":"..."}, ...],
-        "speak": true/false,
-        "language": "french" (or kabyie, ewe, haoussa, mina, tem),
-        "user_level": "CE1" (or CE2, CM1, CM2, 6e, etc.),
-        "user_id": "student_123" (optional, for personalization),
-        "user_name": "Kossi" (optional, for personalization)
-    }
+    If `file` is provided (multipart/form-data), the audio path is saved and
+    `linguix.chat_voice` is invoked. Otherwise the JSON body is parsed and
+    `linguix.chat` is invoked as before.
     """
     try:
-        messages = request.get("messages") or []
-        speak = bool(request.get("speak", False))
-        language = request.get("language", "french")
-        user_level = request.get("user_level", "CE1")
-        user_id = request.get("user_id")
-        user_name = request.get("user_name", "Student")
+        # Multipart/form-data with audio file -> voice pipeline
+        if file is not None:
+            suffix = os.path.splitext(file.filename or "audio.wav")[1] or ".wav"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+                temp_file.write(await file.read())
+                audio_path = temp_file.name
+
+            # prefer form fields when provided, else defaults
+            lang = language or "french"
+            speak_flag = bool(speak) if speak is not None else True
+
+            result = await run_in_threadpool(
+                linguix.chat_voice,
+                None,
+                audio_path,
+                lang,
+                user_id,
+                user_name,
+                speak_flag,
+            )
+
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
+
+            return {"status": "success", "result": result}
+
+        # Otherwise treat as JSON body
+        body = await request.json()
+        messages_payload = body.get("messages") or []
+        speak_flag = bool(body.get("speak", False))
+        language = body.get("language", "french")
+        user_level = body.get("user_level", "CE1")
+        user_id = body.get("user_id")
+        user_name = body.get("user_name", "Student")
 
         result = await run_in_threadpool(
             linguix.chat,
-            messages,
-            speak,
+            messages_payload,
+            speak_flag,
             language,
             user_level,
             user_id,
@@ -265,6 +298,29 @@ async def linguix_voice_pipeline(
         return {"status": "success", "pipeline": pipeline}
     except Exception as e:
         logger.error(f"LINGUIX voice pipeline error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/agents/linguix/tts_stream")
+async def linguix_tts_stream(request: dict):
+    """Stream TTS audio for a given text payload.
+
+    Body: { "text": "...", "language": "french" }
+    Returns: chunked WAV stream (application/octet-stream)
+    """
+    try:
+        text = request.get("text") or ""
+        if not text:
+            raise HTTPException(status_code=400, detail="text required")
+
+        # Use linguix.tts.synthesize_stream which returns an iterator over bytes
+        gen = linguix.tts.synthesize_stream(text)
+
+        return StreamingResponse(gen, media_type="audio/wav")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"LINGUIX tts_stream error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

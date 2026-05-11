@@ -114,6 +114,17 @@ Scripts utiles
 - `scripts/start_fallback_llama_cpp.sh` : commande d'exemple pour lancer un serveur local llama.cpp/LiteRT.
 - `scripts/package_submission.py` / `.sh` / `.ps1` : exécute les tests, vérifie la présence de `LICENSE` et `NOTICE`, puis crée `dist/smartclasse_submission_*.zip`.
 
+Profiling LINGUIX
+
+```powershell
+python scripts\benchmark_linguix_latency.py --iterations 10 --mode both
+pytest tests\test_routing.py -q
+pytest tests\test_tts_engine.py -q
+```
+
+Le benchmark utilise des stubs légers par défaut, ce qui permet de mesurer le coût Python du routage et de la préparation des réponses sans charger Gemma ou Whisper.
+Le TTS est maintenant tolérant aux environnements sans `espeak` dans Docker; le backend démarre même si la synthèse vocale native n'est pas disponible.
+
 Conformité des licences
 
 - Vérifiez que tous les modèles/données externes utilisés sont redistribuables ou documentez leur provenance.

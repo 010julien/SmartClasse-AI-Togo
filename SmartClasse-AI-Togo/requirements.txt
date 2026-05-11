@@ -11,19 +11,23 @@ pydantic-settings==2.1.0
 ollama==0.6.2  # Gemma 4 local via Ollama
 huggingface-hub==0.19.4
 transformers==4.35.2
-torch==2.11.0  # CPU or CUDA based on system
-torchaudio==2.11.0  # For audio processing
+torch==2.11.0+cpu  # CPU-only wheel for Docker and local offline ASR
 
 # Audio Processing (Multimodal)
 librosa==0.10.0  # Audio feature extraction
 soundfile==0.12.1  # WAV/FLAC handling
 numpy==1.26.4
 scipy==1.11.4
+webrtcvad==2.0.10
+pydub==0.25.1
+# loosen noisereduce pin to a compatible version available on PyPI for 3.11
+noisereduce>=2.0.1
 
 # Speech Recognition & Synthesis
 openai-whisper==20250625  # Speech-to-text offline
 imageio-ffmpeg==0.6.0  # Bundled ffmpeg for Whisper on Windows
 pyttsx3==2.90  # Text-to-speech offline
+# faster-whisper==0.7.0  # désactivé: provoque compilation de 'av' sur 3.11 (erreurs Cython)
 langdetect==1.0.9  # Language detection
 
 # Database & Storage
@@ -44,8 +48,4 @@ flake8==6.1.0  # Linting
 mypy==1.7.1  # Type checking
 
 # Gemma 4 Specific (Optional - if not using Ollama)
-google-generativeai==0.3.0  # Gemini API (backup)
 llama-cpp-python==0.2.27  # llama.cpp for Gemma 4 E2B/E4B
-
-# Optional: For Hugging Face Spaces deployment
-gradio==4.19.2  # Web UI (alternative to FastAPI)

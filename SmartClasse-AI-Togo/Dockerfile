@@ -1,30 +1,42 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    OLLAMA_BASE_URL=http://host.docker.internal:11434
+    OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+    PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
 
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential \
-       cmake \
-       gcc \
-       g++ \
-       git \
-       python3-dev \
-       libsndfile1-dev \
-       libopenblas-dev \
-       liblapack-dev \
-       pkg-config \
-       libffi-dev \
-       libssl-dev \
-       ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+     && apt-get install -y --no-install-recommends \
+         build-essential \
+         cmake \
+         gcc \
+         g++ \
+         git \
+         python3-dev \
+         libsndfile1-dev \
+         libopenblas-dev \
+         liblapack-dev \
+         pkg-config \
+         libffi-dev \
+         libssl-dev \
+         libespeak1 \
+         libavformat-dev \
+         libavcodec-dev \
+         libavdevice-dev \
+         libavutil-dev \
+         libavfilter-dev \
+         libswscale-dev \
+         libswresample-dev \
+         ffmpeg \
+     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Support optional, lean requirements file via build-arg. Defaults to requirements.txt
+ARG REQUIREMENTS=requirements.txt
+# Copy both manifests so we can choose at build time without needing variable expansion in COPY
+COPY requirements.txt requirements.ollama.txt ./
+RUN pip install --no-cache-dir -r $REQUIREMENTS
 
 COPY src ./src
 COPY README.md LICENSE NOTICE.txt ./

@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "gemma4:e4b"  # via Ollama - Gemma 4 (optimized)
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 1024
-    LLM_CONTEXT_WINDOW: int = 8192
+    LLM_CONTEXT_WINDOW: int = 2048
+    # Quantized LLM fallback
+    USE_QUANTIZED_LLM: bool = False
+    QUANTIZED_MODEL_PATH: Optional[str] = "models/gemma-4-9b-q4.gguf"
     
     # Ollama Settings (if using Ollama instead of direct)
     OLLAMA_BASE_URL: Optional[str] = "http://localhost:11434"
