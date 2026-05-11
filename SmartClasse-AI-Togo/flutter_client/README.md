@@ -1,89 +1,74 @@
 # SmartClasse Flutter Client
 
-Client mobile Flutter pour discuter avec l'agent SmartClasse en:
+Client Flutter pour interagir avec le backend SmartClasse:
 
-- texte (`/agents/linguix/chat`)
-- message vocal (`/agents/linguix/voice_pipeline`)
-- contexte culturel local via KULTURIX (`/agents/kulturix/context`)
+- chat texte
+- message vocal (upload)
+- lecture audio serveur (`/audio/*`)
+- contexte culturel (`/agents/kulturix/context`)
 
 ## Prerequis
 
-- Flutter SDK installe
-- Backend FastAPI SmartClasse en cours d'execution sur `:8010` via Docker Compose
+- Flutter SDK
+- Backend SmartClasse actif sur `http://127.0.0.1:8010`
 
-### Lancer le backend avant Flutter
+## Lancer le backend avant Flutter
 
-Sur Windows:
+Depuis le dossier du projet backend:
+
+```powershell
+docker compose up --build -d
+Invoke-RestMethod http://127.0.0.1:8010/health
+```
+
+Alternative scripts:
 
 ```powershell
 ..\scripts\start_backend.ps1
 ```
 
-Ou enchaîner backend + rappel Flutter:
-
-```powershell
-..\scripts\start_dev.ps1
-```
-
-Sur macOS/Linux:
-
-```bash
-../scripts/start_backend.sh
-```
-
-## Installation
+## Installation Flutter
 
 ```bash
 cd flutter_client
 flutter pub get
 ```
 
-## Lancer
+## Execution
 
 ```bash
 cd flutter_client
 flutter run -d chrome
 ```
 
-Sur les versions récentes de Flutter, l'option `--web-renderer` n'est plus disponible. Le client SmartClasse est déjà configuré pour rester léger et fonctionner sans dépendances web distantes inutiles.
+## Configuration API
 
-## Mode hors ligne
-
-- Active le toggle `Mode hors ligne / démo` dans l'app pour tester sans backend.
-- Les boutons `DIAGNOSTIX`, `PILOTIX`, `EQUITIX` et `PARENTIX` renvoient alors des exemples locaux.
-- Le chat texte répond aussi avec un fallback local si le backend n'est pas joignable.
-
-## Tests locaux
-
-```bash
-cd flutter_client
-flutter test
-```
-
-```bash
-cd ..
-.\venv\Scripts\python.exe -m pytest tests\test_kulturix_offline.py -q
-```
-
-## Configuration URL API
-
-L'app choisit automatiquement:
+L'application selectionne automatiquement l'URL selon la plateforme:
 
 - Android emulator: `http://10.0.2.2:8010`
 - iOS / desktop: `http://127.0.0.1:8010`
-
-## Fonctionnalites
-
-- Envoi message texte vers l'agent
-- Reponse texte de l'agent
-- Option TTS (lecture audio serveur)
-- Enregistrement vocal local (WAV)
-- Upload vocal vers pipeline et affichage transcription/reponse
-- Mode web offline-friendly avec renderer HTML et police locale
 
 ## Endpoints utilises
 
 - `POST /agents/linguix/chat`
 - `POST /agents/linguix/voice_pipeline`
 - `GET /agents/kulturix/context`
-- `GET /audio/*` (lecture des fichiers audio generes)
+- `GET /audio/*`
+
+## Notes voix
+
+- Pour envoyer un audio, l'app effectue un upload multipart.
+- Cote backend, la route `POST /agents/linguix/chat` accepte aussi un `file` pour le mode vocal.
+- En cas d'absence de voix detectee, le backend peut retourner une reponse informative sans audio.
+
+## Mode hors ligne
+
+- Active le toggle mode hors ligne/demo pour tester sans backend.
+- Certaines fonctions renvoient des exemples locaux si l'API est indisponible.
+
+## Tests
+
+```bash
+cd flutter_client
+flutter test
+```
