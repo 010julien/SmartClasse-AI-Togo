@@ -3,6 +3,7 @@
 import logging
 import os
 import tempfile
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
@@ -10,6 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from src.agents.adaptix import AdaptixAgent
 from src.agents.diagnostix import DiagnostixAgent
@@ -18,13 +20,12 @@ from src.agents.kulturix import KulturixAgent
 from src.agents.parentix import ParentixAgent
 from src.agents.pilotix import PilotixAgent
 from src.agents.linguix import LinguixAgent
-from src.config import Settings
+from src.config import settings
 from src.db import init_db, load_student_profile
 from src.agents.orchestrator import OrchestratorAgent
 
 
 load_dotenv()
-settings = Settings()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ app.mount("/audio", StaticFiles(directory=os.path.join("data", "audio")), name="
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,6 +58,90 @@ linguix = LinguixAgent()
 kulturix = KulturixAgent()
 orchestrator = OrchestratorAgent(adaptix, linguix, kulturix, diagnostix, equitix, pilotix, parentix)
 
+
+# ---------------------------------------------------------------------------
+# Request models — validation Pydantic sur tous les endpoints POST
+# ---------------------------------------------------------------------------
+
+class OrchestratorGenerateRequest(BaseModel):
+    student_id: Optional[str] = None
+    student_name: str = "Student"
+    level: str = "CE1"
+    subject: str = "math"
+    topic: str = "fractions"
+    language: str = "french"
+
+
+class AdaptixGenerateRequest(BaseModel):
+    student_name: str
+    level: str
+    subject: str
+    topic: str
+    language: str = "french"
+
+
+class AdaptixDiagnosticRequest(BaseModel):
+    student_name: str = "Kossi"
+    level: str = "CE1"
+    language: str = "french"
+
+
+class AdaptixProfileRequest(BaseModel):
+    student_id: str
+    responses: List[Any] = []
+
+
+class AdaptixEvaluateRequest(BaseModel):
+    student_id: str
+    exercise_id: str
+    response: Any = None
+    is_correct: bool = False
+
+
+class LinguixTranslateRequest(BaseModel):
+    instruction: str
+    source_language: str = "french"
+    target_languages: List[str] = ["kabyie"]
+    audio_output: bool = False
+
+
+class LinguixTtsRequest(BaseModel):
+    text: str
+    language: str = "french"
+
+
+class DiagnostixAnalyzeRequest(BaseModel):
+    student_id: str
+    student_name: str
+    level: str
+    language: str = "french"
+
+
+class PilotixDashboardRequest(BaseModel):
+    teacher_name: str = "Enseignant"
+    class_name: str = "Classe A"
+    student_ids: List[str] = []
+    language: str = "french"
+
+
+class EquitixRiskRequest(BaseModel):
+    student_id: str
+    student_name: str
+    language: str = "french"
+    signals: Dict[str, Any] = {}
+
+
+class ParentixSmsRequest(BaseModel):
+    student_id: str
+    phone_number: str
+    student_name: str
+    language: str = "french"
+    dry_run: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 
 @app.get("/health")
 async def health():
@@ -77,114 +162,114 @@ async def kulturix_context(query: str = "sorgho karité marché famille"):
 
 
 @app.post("/agents/orchestrator/generate")
-async def orchestrator_generate(request: dict):
+async def orchestrator_generate(request: OrchestratorGenerateRequest):
     try:
         exercise = await run_in_threadpool(
             orchestrator.generate_personalized_exercise,
-            request.get("student_id"),
-            request.get("student_name", "Student"),
-            request.get("level", "CE1"),
-            request.get("subject", "math"),
-            request.get("topic", "fractions"),
-            request.get("language", "french"),
+            request.student_id,
+            request.student_name,
+            request.level,
+            request.subject,
+            request.topic,
+            request.language,
         )
         return {"status": "success", "exercise": exercise}
     except Exception as e:
-        logger.error(f"ORCHESTRATOR error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("ORCHESTRATOR error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne ORCHESTRATOR")
 
 
 @app.post("/agents/adaptix/generate")
-async def adaptix_generate(request: dict):
+async def adaptix_generate(request: AdaptixGenerateRequest):
     try:
         exercise = await run_in_threadpool(
             adaptix.generate_exercise,
-            request.get("student_name"),
-            request.get("level"),
-            request.get("subject"),
-            request.get("topic"),
-            request.get("language", "french"),
+            request.student_name,
+            request.level,
+            request.subject,
+            request.topic,
+            request.language,
         )
         return {"status": "success", "exercise": exercise}
     except Exception as e:
-        logger.error(f"ADAPTIX error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("ADAPTIX error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne ADAPTIX")
 
 
 @app.post("/agents/adaptix/diagnostic")
-async def adaptix_diagnostic(request: dict):
+async def adaptix_diagnostic(request: AdaptixDiagnosticRequest):
     try:
         exercises = await run_in_threadpool(
             adaptix.generate_diagnostic_exercises,
-            request.get("student_name", "Kossi"),
-            request.get("level", "CE1"),
-            request.get("language", "french"),
+            request.student_name,
+            request.level,
+            request.language,
         )
         return {"status": "success", "diagnostic_exercises": exercises}
     except Exception as e:
-        logger.error(f"ADAPTIX diagnostic error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("ADAPTIX diagnostic error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne ADAPTIX diagnostic")
 
 
 @app.post("/agents/adaptix/profile")
-async def adaptix_profile(request: dict):
+async def adaptix_profile(request: AdaptixProfileRequest):
     try:
         profile = await run_in_threadpool(
             adaptix.build_student_profile,
-            request.get("student_id"),
-            request.get("responses", []),
+            request.student_id,
+            request.responses,
         )
         return {"status": "success", "profile": profile}
     except Exception as e:
-        logger.error(f"ADAPTIX profile error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("ADAPTIX profile error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne ADAPTIX profile")
 
 
 @app.get("/agents/adaptix/profile/{student_id}")
 async def adaptix_get_profile(student_id: str):
     profile = load_student_profile(student_id)
     if profile is None:
-        raise HTTPException(status_code=404, detail="Student not found")
+        raise HTTPException(status_code=404, detail="Étudiant introuvable")
     return {"status": "success", "profile": profile}
 
 
 @app.post("/agents/adaptix/evaluate")
-async def adaptix_evaluate(request: dict):
+async def adaptix_evaluate(request: AdaptixEvaluateRequest):
     try:
         result = await run_in_threadpool(
             adaptix.evaluate_response,
-            request.get("student_id"),
-            request.get("exercise_id"),
-            request.get("response"),
-            request.get("is_correct"),
+            request.student_id,
+            request.exercise_id,
+            request.response,
+            request.is_correct,
         )
         return {"status": "success", "update": result}
     except Exception as e:
-        logger.error(f"ADAPTIX evaluation error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("ADAPTIX evaluation error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne ADAPTIX evaluate")
 
 
 @app.post("/agents/linguix/transcribe")
 async def linguix_transcribe(file: UploadFile = File(...), language_hint: str = Form(default="")):
+    audio_path: Optional[str] = None
     try:
         suffix = os.path.splitext(file.filename or "audio.wav")[1] or ".wav"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file.write(await file.read())
-            audio_path = temp_file.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(await file.read())
+            audio_path = tmp.name
 
         transcription = await run_in_threadpool(
             linguix.transcribe,
             audio_path,
             language_hint or None,
         )
-
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
-
         return {"status": "success", "transcription": transcription}
     except Exception as e:
-        logger.error(f"LINGUIX transcribe error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("LINGUIX transcribe error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne LINGUIX transcribe")
+    finally:
+        if audio_path and os.path.exists(audio_path):
+            os.remove(audio_path)
 
 
 @app.post("/agents/linguix/chat")
@@ -196,26 +281,18 @@ async def linguix_chat(
     user_level: str = Form(default=None),
     user_id: str = Form(default=None),
     user_name: str = Form(default=None),
-    messages: str = Form(default=None),
 ):
-    """Chat endpoint that supports JSON requests and multipart audio uploads.
-
-    If `file` is provided (multipart/form-data), the audio path is saved and
-    `linguix.chat_voice` is invoked. Otherwise the JSON body is parsed and
-    `linguix.chat` is invoked as before.
-    """
+    """Chat endpoint — accepte multipart/form-data (audio) ou JSON."""
+    audio_path: Optional[str] = None
     try:
-        # Multipart/form-data with audio file -> voice pipeline
         if file is not None:
             suffix = os.path.splitext(file.filename or "audio.wav")[1] or ".wav"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-                temp_file.write(await file.read())
-                audio_path = temp_file.name
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                tmp.write(await file.read())
+                audio_path = tmp.name
 
-            # prefer form fields when provided, else defaults
             lang = language or "french"
             speak_flag = bool(speak) if speak is not None else True
-
             result = await run_in_threadpool(
                 linguix.chat_voice,
                 None,
@@ -225,13 +302,8 @@ async def linguix_chat(
                 user_name,
                 speak_flag,
             )
-
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
-
             return {"status": "success", "result": result}
 
-        # Otherwise treat as JSON body
         body = await request.json()
         messages_payload = body.get("messages") or []
         speak_flag = bool(body.get("speak", False))
@@ -249,27 +321,29 @@ async def linguix_chat(
             user_id,
             user_name,
         )
-
         return {"status": "success", "result": result}
     except Exception as e:
-        logger.error(f"LINGUIX chat error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("LINGUIX chat error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne LINGUIX chat")
+    finally:
+        if audio_path and os.path.exists(audio_path):
+            os.remove(audio_path)
 
 
 @app.post("/agents/linguix/translate_instruction")
-async def linguix_translate(request: dict):
+async def linguix_translate(request: LinguixTranslateRequest):
     try:
         translations = await run_in_threadpool(
             linguix.translate_instruction,
-            request.get("instruction"),
-            request.get("source_language", "french"),
-            request.get("target_languages", ["kabyie"]),
-            request.get("audio_output", False),
+            request.instruction,
+            request.source_language,
+            request.target_languages,
+            request.audio_output,
         )
         return {"status": "success", "translations": translations}
     except Exception as e:
-        logger.error(f"LINGUIX translate error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("LINGUIX translate error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne LINGUIX translate")
 
 
 @app.post("/agents/linguix/voice_pipeline")
@@ -278,115 +352,105 @@ async def linguix_voice_pipeline(
     source_language_hint: str = Form(default="french"),
     target_languages: str = Form(default="ewe"),
 ):
+    audio_path: Optional[str] = None
     try:
         suffix = os.path.splitext(file.filename or "audio.wav")[1] or ".wav"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file.write(await file.read())
-            audio_path = temp_file.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(await file.read())
+            audio_path = tmp.name
 
-        targets = [language.strip() for language in target_languages.split(",") if language.strip()]
+        targets = [lang.strip() for lang in target_languages.split(",") if lang.strip()]
         pipeline = await run_in_threadpool(
             linguix.voice_pipeline,
             audio_path,
             targets or ["ewe"],
             source_language_hint or None,
         )
-
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
-
         return {"status": "success", "pipeline": pipeline}
     except Exception as e:
-        logger.error(f"LINGUIX voice pipeline error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("LINGUIX voice pipeline error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne LINGUIX voice pipeline")
+    finally:
+        if audio_path and os.path.exists(audio_path):
+            os.remove(audio_path)
 
 
 @app.post("/agents/linguix/tts_stream")
-async def linguix_tts_stream(request: dict):
-    """Stream TTS audio for a given text payload.
-
-    Body: { "text": "...", "language": "french" }
-    Returns: chunked WAV stream (application/octet-stream)
-    """
+async def linguix_tts_stream(request: LinguixTtsRequest):
+    """Stream TTS audio. Corps: { "text": "...", "language": "french" }"""
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Le champ 'text' ne peut pas être vide")
     try:
-        text = request.get("text") or ""
-        if not text:
-            raise HTTPException(status_code=400, detail="text required")
-
-        # Use linguix.tts.synthesize_stream which returns an iterator over bytes
-        gen = linguix.tts.synthesize_stream(text)
-
+        gen = linguix.tts.synthesize_stream(request.text)
         return StreamingResponse(gen, media_type="audio/wav")
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"LINGUIX tts_stream error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("LINGUIX tts_stream error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne LINGUIX TTS")
 
 
 @app.post("/agents/diagnostix/analyze")
-async def diagnostix_analyze(request: dict):
+async def diagnostix_analyze(request: DiagnostixAnalyzeRequest):
     try:
         result = await run_in_threadpool(
             diagnostix.analyze_student,
-            request.get("student_id"),
-            request.get("student_name"),
-            request.get("level"),
-            request.get("language", "french"),
+            request.student_id,
+            request.student_name,
+            request.level,
+            request.language,
         )
         return {"status": "success", "analysis": result}
     except Exception as e:
-        logger.error(f"DIAGNOSTIX analyze error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("DIAGNOSTIX analyze error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne DIAGNOSTIX")
 
 
 @app.post("/agents/pilotix/dashboard")
-async def pilotix_dashboard(request: dict):
+async def pilotix_dashboard(request: PilotixDashboardRequest):
     try:
         dashboard = await run_in_threadpool(
             pilotix.build_dashboard,
-            request.get("teacher_name", "Enseignant"),
-            request.get("class_name", "Classe A"),
-            request.get("student_ids", []),
-            request.get("language", "french"),
+            request.teacher_name,
+            request.class_name,
+            request.student_ids,
+            request.language,
         )
         return {"status": "success", "dashboard": dashboard}
     except Exception as e:
-        logger.error(f"PILOTIX dashboard error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("PILOTIX dashboard error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne PILOTIX")
 
 
 @app.post("/agents/equitix/risk_assessment")
-async def equitix_assess(request: dict):
+async def equitix_assess(request: EquitixRiskRequest):
     try:
         result = await run_in_threadpool(
             equitix.assess_dropout_risk,
-            request.get("student_id"),
-            request.get("student_name"),
-            request.get("language", "french"),
-            request.get("signals", {}),
+            request.student_id,
+            request.student_name,
+            request.language,
+            request.signals,
         )
         return {"status": "success", "assessment": result}
     except Exception as e:
-        logger.error(f"EQUITIX assessment error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("EQUITIX assessment error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne EQUITIX")
 
 
 @app.post("/agents/parentix/send_sms")
-async def parentix_send(request: dict):
+async def parentix_send(request: ParentixSmsRequest):
     try:
         result = await run_in_threadpool(
             parentix.send_weekly_message,
-            request.get("student_id"),
-            request.get("phone_number"),
-            request.get("student_name"),
-            request.get("language", "french"),
-            request.get("dry_run", True),
+            request.student_id,
+            request.phone_number,
+            request.student_name,
+            request.language,
+            request.dry_run,
         )
         return {"status": "success", "sms": result}
     except Exception as e:
-        logger.error(f"PARENTIX sms error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("PARENTIX sms error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Erreur interne PARENTIX")
 
 
 @app.get("/")

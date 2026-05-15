@@ -59,12 +59,13 @@ def extract_json(content: str) -> Optional[Any]:
     try:
         return json.loads(text)
     except Exception:
-        # try to find first { ... } substring
         start = text.find("{")
         end = text.rfind("}")
         if start != -1 and end != -1 and end > start:
             try:
                 return json.loads(text[start : end + 1])
-            except Exception:
+            except Exception as inner:
+                logger.debug("extract_json: impossible de parser le JSON extrait: %s", inner)
                 return None
+        logger.debug("extract_json: aucun objet JSON trouvé dans la réponse LLM")
     return None
