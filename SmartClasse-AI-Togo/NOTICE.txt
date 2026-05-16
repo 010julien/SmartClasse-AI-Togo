@@ -1,18 +1,271 @@
-SmartClasse AI Togo - Third-Party Notice
+SmartClasse AI Togo — Third-Party Notices
+==========================================
 
-This repository includes third-party Python libraries listed in requirements.txt.
-It may also rely on external model files or runtime components that are not bundled in the source tree.
+This file lists all third-party software components used in SmartClasse AI Togo,
+their authors, and their licenses — as required by the hackathon submission rules
+and the Apache 2.0 license terms of this project.
 
-Required submission details:
+==============================================================================
+SUBMISSION INFORMATION
+==============================================================================
 
-- Team name: SmartClasse
-- Kaggle account: [replace-with-official-team-account]
-- Team members: [replace-with-full-member-list]
+Project: SmartClasse AI Togo
+Repository: https://github.com/010julien/SmartClasse-AI-Togo
+License: CC-BY 4.0 (documentation/notebooks) + Apache 2.0 (source code)
+Kaggle account: hustlerscorporation1@gmail.com
 
-External components to document before final submission:
+==============================================================================
+AI MODEL
+==============================================================================
 
-- Gemma 4 model source and usage terms: [fill in source]
-- Ollama runtime, if used locally: local install only, not bundled
-- llama.cpp or LiteRT fallback binaries/models: [fill in source and license]
+Gemma 4 (E4B variant)
+  Author:      Google LLC
+  License:     Gemma Terms of Use
+               https://ai.google.dev/gemma/terms
+  Usage:       Local inference via Ollama. Model weights are NOT bundled
+               in this repository. Downloaded separately by the end user.
+  Notes:       Gemma is permitted for commercial and research use with
+               attribution. This project provides attribution here and in
+               README.md.
 
-Keep this notice aligned with the competition rules and verify that every redistributable asset in the archive is allowed for submission.
+==============================================================================
+INFERENCE RUNTIME
+==============================================================================
+
+Ollama
+  Author:      Ollama, Inc.
+  License:     MIT License
+  Source:      https://github.com/ollama/ollama
+  Usage:       Local LLM inference server. NOT bundled — installed separately
+               by the end user from https://ollama.com
+
+==============================================================================
+CORE PYTHON DEPENDENCIES
+==============================================================================
+
+FastAPI
+  Author:      Sebastián Ramírez (tiangolo)
+  License:     MIT License
+  Source:      https://github.com/tiangolo/fastapi
+
+Uvicorn
+  Author:      Encode OSS Ltd.
+  License:     BSD 3-Clause License
+  Source:      https://github.com/encode/uvicorn
+
+Pydantic
+  Author:      Samuel Colvin and contributors
+  License:     MIT License
+  Source:      https://github.com/pydantic/pydantic
+
+pydantic-settings
+  Author:      Samuel Colvin and contributors
+  License:     MIT License
+  Source:      https://github.com/pydantic/pydantic-settings
+
+Starlette
+  Author:      Encode OSS Ltd.
+  License:     BSD 3-Clause License
+  Source:      https://github.com/encode/starlette
+
+==============================================================================
+SPEECH-TO-TEXT
+==============================================================================
+
+openai-whisper
+  Author:      OpenAI
+  License:     MIT License
+  Source:      https://github.com/openai/whisper
+  Usage:       Local ASR (Automatic Speech Recognition). Whisper model weights
+               (base, ~145MB) are downloaded on first use. NOT bundled.
+  Model card:  https://huggingface.co/openai/whisper-base
+
+==============================================================================
+TEXT-TO-SPEECH
+==============================================================================
+
+pyttsx3
+  Author:      Natesh M Bhat and contributors
+  License:     Mozilla Public License 2.0 (MPL-2.0)
+  Source:      https://github.com/nateshmbhat/pyttsx3
+  Usage:       Offline TTS using system voices. No API calls, no network.
+
+==============================================================================
+AUDIO PROCESSING
+==============================================================================
+
+librosa
+  Author:      Brian McFee and librosa contributors
+  License:     ISC License
+  Source:      https://github.com/librosa/librosa
+
+noisereduce
+  Author:      Tim Sainburg
+  License:     MIT License
+  Source:      https://github.com/timsainb/noisereduce
+
+pydub
+  Author:      James Robert and contributors
+  License:     MIT License
+  Source:      https://github.com/jiaaro/pydub
+
+soundfile
+  Author:      Bastian Bechtold and contributors
+  License:     BSD 3-Clause License
+  Source:      https://github.com/bastibe/python-soundfile
+
+webrtcvad-wheels
+  Original:    Google WebRTC project
+  Wheels by:   Felipe Arruda Pontes
+  License:     BSD 3-Clause License (WebRTC) + MIT (wheels package)
+  Source:      https://github.com/wiseman/py-webrtcvad
+               https://github.com/nickoala/webrtcvad-wheels
+
+imageio-ffmpeg
+  Author:      imageio contributors
+  License:     BSD 2-Clause License
+  Source:      https://github.com/imageio/imageio-ffmpeg
+  Notes:       Bundles FFmpeg static binary.
+               FFmpeg: LGPL 2.1+. See https://ffmpeg.org/legal.html
+
+langdetect
+  Author:      Mimino666 (Python port of language-detection by Shuyo Nakatani)
+  License:     Apache License 2.0
+  Source:      https://github.com/Mimino666/langdetect
+  Original:    https://github.com/shuyo/language-detection (Apache 2.0)
+
+NumPy
+  Author:      NumPy contributors
+  License:     BSD 3-Clause License
+  Source:      https://github.com/numpy/numpy
+
+SciPy
+  Author:      SciPy contributors
+  License:     BSD 3-Clause License
+  Source:      https://github.com/scipy/scipy
+
+==============================================================================
+DATABASE
+==============================================================================
+
+SQLAlchemy
+  Author:      Mike Bayer and contributors
+  License:     MIT License
+  Source:      https://github.com/sqlalchemy/sqlalchemy
+
+cryptography
+  Author:      The Python Cryptographic Authority (PyCA)
+  License:     Apache License 2.0 AND BSD License (dual)
+  Source:      https://github.com/pyca/cryptography
+
+==============================================================================
+WEB & UTILITIES
+==============================================================================
+
+python-multipart
+  Author:      Andrew Dunham and contributors
+  License:     Apache License 2.0
+  Source:      https://github.com/Kludex/python-multipart
+
+requests
+  Author:      Kenneth Reitz and contributors
+  License:     Apache License 2.0
+  Source:      https://github.com/psf/requests
+
+python-dotenv
+  Author:      Saurabh Kumar and contributors
+  License:     BSD 3-Clause License
+  Source:      https://github.com/theskumar/python-dotenv
+
+loguru
+  Author:      Delgan
+  License:     MIT License
+  Source:      https://github.com/Delgan/loguru
+
+ollama (Python client)
+  Author:      Ollama, Inc.
+  License:     MIT License
+  Source:      https://github.com/ollama/ollama-python
+
+==============================================================================
+TESTING
+==============================================================================
+
+pytest
+  Author:      Holger Krekel and pytest contributors
+  License:     MIT License
+  Source:      https://github.com/pytest-dev/pytest
+
+httpx
+  Author:      Encode OSS Ltd.
+  License:     BSD 3-Clause License
+  Source:      https://github.com/encode/httpx
+
+==============================================================================
+FRONTEND (FLUTTER CLIENT)
+==============================================================================
+
+Flutter SDK
+  Author:      Google LLC
+  License:     BSD 3-Clause License
+  Source:      https://github.com/flutter/flutter
+
+Dart SDK
+  Author:      Google LLC
+  License:     BSD 3-Clause License
+  Source:      https://github.com/dart-lang/sdk
+
+Flutter packages (see flutter_client/pubspec.yaml for full list):
+  http             - BSD 3-Clause
+  provider         - MIT
+  shared_preferences - BSD 3-Clause
+  file_picker      - MIT
+  just_audio       - MIT
+  record           - MIT
+  flutter_svg      - MIT
+
+==============================================================================
+FONTS & ASSETS
+==============================================================================
+
+Material Icons
+  Author:      Google LLC
+  License:     Apache License 2.0
+  Source:      https://github.com/google/material-design-icons
+
+==============================================================================
+DATA SOURCES
+==============================================================================
+
+MEPS Curriculum Data (data/meps_curriculum.json)
+  Source:      Togolese Ministry of Primary and Secondary Education (MEPS)
+  License:     Public domain (official government educational program)
+  Usage:       Curriculum alignment for lesson generation. No PII included.
+
+Cultural Corpus (data/cultural_corpus.json)
+  Source:      Compiled from publicly available Togolese cultural sources,
+               proverbs collections, and educational materials.
+  License:     CC-BY 4.0 (this project's license)
+  Usage:       Cultural grounding for AI-generated educational content.
+
+==============================================================================
+PYTORCH (OPTIONAL — required by Whisper)
+==============================================================================
+
+PyTorch
+  Author:      Meta AI and PyTorch contributors
+  License:     BSD 3-Clause License
+  Source:      https://github.com/pytorch/pytorch
+  Notes:       NOT pinned in requirements.txt. Install separately before
+               other dependencies:
+               pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+==============================================================================
+END OF NOTICE
+==============================================================================
+
+All trademarks and registered trademarks are the property of their respective
+owners. Use of these trademarks does not imply endorsement by those owners.
+
+For license texts, see the respective project repositories or the
+Open Source Initiative (https://opensource.org/licenses).

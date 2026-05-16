@@ -1,51 +1,51 @@
-# EduPath AI — Python Dependencies
-# Python 3.10+
+# SmartClasse AI Togo — Python Dependencies
+# Python 3.10+ | Compatible 3.10, 3.11, 3.12
+# Install: pip install -r requirements.txt
+#
+# NOTE: PyTorch is NOT pinned here to avoid conflicts.
+# Install separately BEFORE this file:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Or for GPU:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu118
 
-# Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.10.6
-pydantic-settings==2.1.0
+# ── Core Framework ──────────────────────────────────────────────────────────
+fastapi>=0.104.0,<1.0.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0,<3.0.0
+pydantic-settings>=2.1.0
 
-# LLM & AI
-ollama==0.6.2  # Gemma 4 local via Ollama
-huggingface-hub==0.19.4
-transformers==4.35.2
-torch==2.11.0+cpu  # CPU-only wheel for Docker and local offline ASR
+# ── LLM — Gemma 4 via Ollama (local, offline) ──────────────────────────────
+ollama>=0.3.0
 
-# Audio Processing (Multimodal)
-librosa==0.10.0  # Audio feature extraction
-soundfile==0.12.1  # WAV/FLAC handling
-numpy==1.26.4
-scipy==1.11.4
-webrtcvad==2.0.10
-pydub==0.25.1
-# loosen noisereduce pin to a compatible version available on PyPI for 3.11
+# ── Audio Processing ─────────────────────────────────────────────────────────
+numpy>=1.24.0
+scipy>=1.11.0
+soundfile>=0.12.0
+pydub>=0.25.0
 noisereduce>=2.0.1
+librosa>=0.10.0
+# webrtcvad: use prebuilt wheels package for Windows/Mac compatibility
+webrtcvad-wheels>=2.0.10
+imageio-ffmpeg>=0.4.8
+langdetect>=1.0.9
 
-# Speech Recognition & Synthesis
-openai-whisper==20250625  # Speech-to-text offline
-imageio-ffmpeg==0.6.0  # Bundled ffmpeg for Whisper on Windows
-pyttsx3==2.90  # Text-to-speech offline
-# faster-whisper==0.7.0  # désactivé: provoque compilation de 'av' sur 3.11 (erreurs Cython)
-langdetect==1.0.9  # Language detection
+# ── Text-to-Speech (offline) ─────────────────────────────────────────────────
+pyttsx3>=2.90
 
-# Database & Storage
-sqlalchemy==2.0.23  # ORM
-# sqlite3 est inclus dans Python
-cryptography==41.0.7  # AES-256 encryption
+# ── Speech-to-Text (offline Whisper) ─────────────────────────────────────────
+# openai-whisper requires torch — install torch first (see note above), then:
+openai-whisper>=20231117
 
-# Utilities
-python-multipart==0.0.20  # File upload support
-requests==2.31.0  # HTTP client
-python-dotenv==1.0.0  # Environment variables
-loguru==0.7.2  # Logging
+# ── Database & Storage ───────────────────────────────────────────────────────
+sqlalchemy>=2.0.0
+cryptography>=41.0.0
 
-# Development & Testing
-pytest==7.4.3
-black==23.12.0  # Code formatting
-flake8==6.1.0  # Linting
-mypy==1.7.1  # Type checking
+# ── Web & Utilities ──────────────────────────────────────────────────────────
+python-multipart>=0.0.6
+requests>=2.31.0
+python-dotenv>=1.0.0
+loguru>=0.7.0
 
-# Gemma 4 Specific (Optional - if not using Ollama)
-llama-cpp-python==0.2.27  # llama.cpp for Gemma 4 E2B/E4B
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest>=7.4.0
+httpx>=0.25.0
