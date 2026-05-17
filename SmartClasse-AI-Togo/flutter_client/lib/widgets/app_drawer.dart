@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 
@@ -88,11 +89,18 @@ class AppDrawer extends StatelessWidget {
           const Divider(),
           SwitchListTile(
             title: const Text('Réponse audio (TTS)'),
-            subtitle: const Text('Synthèse vocale des réponses'),
-            secondary: const Icon(Icons.volume_up_outlined, color: appGreen),
+            subtitle: Text(
+              kIsWeb
+                  ? 'Non disponible sur navigateur web'
+                  : 'Synthèse vocale des réponses',
+            ),
+            secondary: Icon(
+              kIsWeb ? Icons.volume_off_outlined : Icons.volume_up_outlined,
+              color: kIsWeb ? Colors.grey : appGreen,
+            ),
             value: speak,
             activeColor: appGreen,
-            onChanged: onSpeakChanged,
+            onChanged: kIsWeb ? null : onSpeakChanged,
           ),
           SwitchListTile(
             title: const Text('Mode hors ligne'),

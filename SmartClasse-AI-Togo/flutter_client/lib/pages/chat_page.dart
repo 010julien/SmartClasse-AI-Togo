@@ -36,7 +36,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
   bool    _loading     = false;
   bool    _isRecording = false;
-  bool    _speak       = false;
+  bool    _speak       = !kIsWeb;   // TTS actif par défaut sur natif, désactivé sur web
   bool    _offlineDemo = false;
   String  _language    = 'french';
   String? _activeAgent;
@@ -133,7 +133,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       }
       history.add({'role': msg.role, 'content': msg.text});
     }
-    if (history.length > 6) return history.sublist(history.length - 6);
+    if (history.length > 10) return history.sublist(history.length - 10);
     return history;
   }
 
