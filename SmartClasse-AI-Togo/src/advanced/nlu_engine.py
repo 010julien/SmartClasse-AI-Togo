@@ -2,7 +2,7 @@
 
 import re
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, TYPE_CHECKING
 from dataclasses import dataclass
 from enum import Enum
 
@@ -39,11 +39,49 @@ class EntityExtractor:
     """Extract educational entities from user input."""
 
     SUBJECTS = {
-        "math": ["math", "mathematic", "fraction", "geometrie", "calcul", "addition", "soustraction", "multiplication"],
-        "french": ["francais", "french", "grammaire", "conjugaison", "orthographe", "vocabulaire", "lecture"],
-        "history": ["histoire", "history", "civilisation", "geographie", "culture"],
-        "science": ["science", "physique", "chimie", "biologie", "nature"],
-        "civic": ["civique", "civic", "droits", "devoir", "citoyen"],
+        "math": [
+            # French
+            "math", "mathematic", "fraction", "geometrie", "calcul", "addition",
+            "soustraction", "multiplication", "division", "nombre", "chiffre",
+            # Kabiyè
+            "nɔmɔɔrɩ", "kɔlɩ", "pɩsɩ",
+            # Ewe
+            "nambala", "kɔnta", "susu",
+        ],
+        "french": [
+            # French
+            "francais", "french", "grammaire", "conjugaison", "orthographe",
+            "vocabulaire", "lecture", "phrase", "mot", "dictée",
+            # Kabiyè
+            "fransɩɩ", "yɔɔdɩyɛ",
+            # Ewe
+            "gɔme", "xó",
+        ],
+        "history": [
+            # French
+            "histoire", "history", "civilisation", "geographie", "culture",
+            "continent", "pays", "roi", "epoque",
+            # Kabiyè
+            "pɩyalɩ", "tɛtɛ",
+            # Ewe
+            "hisɔti", "gbe",
+        ],
+        "science": [
+            # French
+            "science", "physique", "chimie", "biologie", "nature", "plante",
+            "animal", "corps", "sante", "vie",
+            # Kabiyè
+            "sɛkɛlɛnsi", "mbʊ",
+            # Ewe
+            "siaense", "dzidzime",
+        ],
+        "civic": [
+            # French
+            "civique", "civic", "droits", "devoir", "citoyen", "loi",
+            "republique", "vote", "liberte",
+            # Kabiyè
+            "sɩɣtʊʊ", "ɛjaɣdɩ",
+        ],
     }
 
     LEVELS = {
@@ -102,45 +140,189 @@ class EntityExtractor:
 
 
 class IntentClassifier:
-    """Classify user intent using heuristic + keyword matching."""
+    """
+    Classify user intent using a two-tier strategy:
+      1. LLM-based classification (Gemma via Ollama) — language-agnostic,
+         works with French, Kabiyè, Ewe, code-switching and any mixture.
+      2. Multilingual keyword fallback — instant, no LLM required.
+    """
 
-    KEYWORDS = {
-        IntentType.EXPLAIN: ["explique", "comment", "c'est quoi", "c est quoi", "definition", "aide moi comprendre", "pourquoi", "exemple", "clarifier"],
-        IntentType.EXERCISE: ["exercice", "exo", "probleme", "test", "donnez", "donne moi", "faites", "propose", "test moi", "verifier"],
-        IntentType.CORRECT: ["corriger", "correction", "corrige", "verify", "check", "is correct", "juste", "faux"],
-        IntentType.TRANSLATE: ["traduction", "traduit", "translate", "en", "traduire"],
-        IntentType.LEARN: ["apprendre", "enseigner", "lecon", "cours", "comprendre", "understand"],
-        IntentType.EVALUATE: ["evaluer", "evaluation", "score", "progress", "resultat", "performance"],
-        IntentType.SOCIALIZE: ["bonjour", "hello", "ça va", "comment ca va", "salut", "thanks", "merci", "merci beaucoup"],
-        IntentType.CLARIFY: ["je ne comprends", "c'est pas clair", "plus simple", "encore", "plutot", "rephrase"],
-        IntentType.HELP: ["aide", "help", "assistance", "support", "probleme", "stuck"],
+    # ── Multilingual keyword bank (French + Kabiyè + Ewe + Haoussa basics) ───
+    KEYWORDS: Dict[IntentType, List[str]] = {
+        IntentType.EXPLAIN: [
+            # French
+            "explique", "comment", "c'est quoi", "c est quoi", "definition",
+            "aide moi comprendre", "pourquoi", "exemple", "clarifier", "qu'est-ce",
+            # Kabiyè
+            "ɛzɩma", "pʊ", "lɛ", "wɩlɩʊ",
+            # Ewe
+            "alesi", "wòafia", "nye", "ŋutinya",
+            # English
+            "what is", "explain", "why", "how does",
+        ],
+        IntentType.EXERCISE: [
+            # French
+            "exercice", "exo", "probleme", "test", "donnez", "donne moi",
+            "propose", "test moi", "verifier", "entrainer", "pratiquer",
+            # Kabiyè
+            "tɔm", "ɛsɩ", "kɔm",
+            # Ewe
+            "tɔm", "gbɔ", "mia wɔ",
+            # English
+            "exercise", "practice", "problem", "give me",
+        ],
+        IntentType.CORRECT: [
+            # French
+            "corriger", "correction", "corrige", "juste", "faux", "verifier",
+            "est-ce que c'est", "ai-je raison",
+            # English
+            "correct", "check", "is this right", "verify",
+        ],
+        IntentType.TRANSLATE: [
+            # French
+            "traduction", "traduit", "traduire", "en kabiye", "en ewe",
+            "comment dit-on", "comment on dit",
+            # English
+            "translate", "in kabyie", "in ewe",
+            # Kabiyè/Ewe
+            "yɔɔdɩyɛ", "gblɔ",
+        ],
+        IntentType.LEARN: [
+            # French
+            "apprendre", "enseigner", "lecon", "cours", "comprendre", "etudier",
+            "je veux savoir", "montre moi",
+            # English
+            "learn", "study", "teach me", "show me",
+            # Kabiyè
+            "wɩlɩɣ", "nɩɩ",
+        ],
+        IntentType.EVALUATE: [
+            "evaluer", "evaluation", "score", "progress", "resultat",
+            "performance", "mon niveau", "bilan", "résultat",
+        ],
+        IntentType.SOCIALIZE: [
+            # French
+            "bonjour", "bonsoir", "ça va", "comment ca va", "salut",
+            "merci", "au revoir", "super", "bravo",
+            # Kabiyè
+            "waaléwi", "yiyaɖi", "mbʊ",
+            # Ewe
+            "woezɔ", "akpe", "ŋdi",
+            # Ewe/Mina
+            "bonsua",
+            # English
+            "hello", "hi", "thanks", "bye",
+        ],
+        IntentType.CLARIFY: [
+            "je ne comprends", "pas clair", "plus simple", "encore",
+            "répète", "reformule", "rephrase", "je suis perdu",
+        ],
+        IntentType.HELP: [
+            "aide", "help", "assistance", "support", "stuck",
+            "bloqué", "je ne sais pas", "j'ai besoin",
+        ],
     }
 
+    # ── LLM-based classification ─────────────────────────────────────────────
+
     @staticmethod
-    def classify(text: str, entities: Dict[str, Any]) -> Intent:
-        """Classify intent from text and entities."""
+    def _classify_with_llm(text: str) -> Optional[Tuple[IntentType, float]]:
+        """
+        Call Gemma to classify intent. Language-agnostic — works in French,
+        Kabiyè, Ewe, and code-switching. Returns (IntentType, confidence) or
+        None if the LLM is unavailable or the response cannot be parsed.
+        """
+        try:
+            import json as _json
+            from src.llm import call_chat  # lazy import — avoids circular deps
+
+            prompt = (
+                "Tu es un classificateur d'intention pour un tuteur éducatif au Togo.\n"
+                "Classifie ce message en UN des codes suivants:\n"
+                "  explain   — demande d'explication ou de définition\n"
+                "  exercise  — demande d'exercice ou de problème\n"
+                "  correct   — demande de correction d'une réponse\n"
+                "  translate — demande de traduction\n"
+                "  learn     — apprentissage général d'un concept\n"
+                "  socialize — salutation ou conversation sociale\n"
+                "  clarify   — demande de reformulation\n"
+                "  help      — demande d'aide générale\n\n"
+                f"Message (peut être en français, kabiyè, ewe ou mélangé): \"{text}\"\n\n"
+                'Réponds UNIQUEMENT en JSON: {"intent": "...", "confidence": 0.0}'
+            )
+
+            response = call_chat(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0,
+                max_tokens=40,
+            )
+            raw = response.get("message", {}).get("content", "").strip()
+
+            # Strip markdown fences if present
+            raw = re.sub(r"^```json\s*|^```\s*|```$", "", raw, flags=re.MULTILINE).strip()
+
+            parsed = _json.loads(raw)
+            intent_str = parsed.get("intent", "").strip().lower()
+            confidence = float(parsed.get("confidence", 0.5))
+
+            # Map string → IntentType
+            mapping = {t.value: t for t in IntentType}
+            intent_type = mapping.get(intent_str, IntentType.LEARN)
+            return intent_type, min(1.0, max(0.0, confidence))
+
+        except Exception as exc:
+            logger.debug(f"LLM classification unavailable ({exc}), falling back to keywords")
+            return None
+
+    # ── Keyword-based classification (fallback) ──────────────────────────────
+
+    @staticmethod
+    def _keyword_classify(text: str, entities: Dict[str, Any]) -> Tuple[IntentType, float]:
+        """Score-based keyword matching across all supported languages."""
         lowered = text.lower()
         scores: Dict[IntentType, float] = {}
 
-        # Score each intent based on keyword matches
         for intent_type, keywords in IntentClassifier.KEYWORDS.items():
             matches = sum(1 for kw in keywords if kw in lowered)
-            scores[intent_type] = matches / len(keywords) if keywords else 0.0
+            # Normalize: raw count / sqrt(keywords) for length-invariant scoring
+            scores[intent_type] = matches / max(1, len(keywords) ** 0.5)
 
-        # Fallback to SOCIALIZE or LEARN if no strong signal
         best_intent = max(scores, key=scores.get) if scores else IntentType.LEARN
-        confidence = scores.get(best_intent, 0.0)
+        confidence = min(1.0, scores.get(best_intent, 0.0))
 
-        # Boost confidence if entities support it
-        if best_intent == IntentType.EXERCISE and "action" in entities and entities["action"] == "exercise":
-            confidence = min(1.0, confidence + 0.2)
+        # Entity-based boosts
+        if best_intent == IntentType.EXERCISE and entities.get("action") == "exercise":
+            confidence = min(1.0, confidence + 0.25)
+        if best_intent == IntentType.EXPLAIN and entities.get("action") == "explain":
+            confidence = min(1.0, confidence + 0.20)
 
-        if confidence < 0.15:
+        # Low-signal fallback
+        if confidence < 0.05:
             best_intent = IntentType.LEARN
+            confidence = 0.4
+
+        return best_intent, confidence
+
+    # ── Public API ───────────────────────────────────────────────────────────
+
+    @staticmethod
+    def classify(text: str, entities: Dict[str, Any]) -> Intent:
+        """
+        Two-tier classification:
+          1. Try Gemma (language-agnostic, high accuracy)
+          2. Fall back to multilingual keyword scoring
+        """
+        # Tier 1 — LLM
+        llm_result = IntentClassifier._classify_with_llm(text)
+        if llm_result is not None:
+            best_intent, confidence = llm_result
+        else:
+            # Tier 2 — keywords
+            best_intent, confidence = IntentClassifier._keyword_classify(text, entities)
 
         return Intent(
             type=best_intent,
-            confidence=min(1.0, confidence),
+            confidence=confidence,
             entities=entities,
             raw_tokens=text.split(),
             primary_subject=entities.get("subject"),

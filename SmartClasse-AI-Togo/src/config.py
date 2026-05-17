@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     # LLM Settings
     LLM_MODEL: str = "gemma4:e4b"  # via Ollama - Gemma 4 (optimized)
     LLM_TEMPERATURE: float = 0.3
-    LLM_MAX_TOKENS: int = 1024
-    LLM_CONTEXT_WINDOW: int = 2048
+    LLM_MAX_TOKENS: int = 512  # 512 tokens = réponses pédagogiques complètes (~380 mots)
+    LLM_CONTEXT_WINDOW: int = 4096  # Suffisant pour le prompt avancé + historique
     # Quantized LLM fallback
     USE_QUANTIZED_LLM: bool = False
     QUANTIZED_MODEL_PATH: Optional[str] = "models/gemma-4-9b-q4.gguf"

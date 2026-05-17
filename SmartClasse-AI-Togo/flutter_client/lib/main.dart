@@ -1,19 +1,6 @@
-import 'dart:convert';
-
-import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
-import 'services/orchestrator_api.dart';
-
-// ─── Couleurs inspirées du drapeau togolais ───────────────────────────────
-const _green = Color(0xFF006A4E);
-const _gold = Color(0xFFFFCE00);
-const _greenLight = Color(0xFFE6F4F0);
-const _goldLight = Color(0xFFFFF9E0);
-const _surface = Color(0xFFF4F7F6);
+import 'constants/colors.dart';
+import 'pages/chat_page.dart';
 
 void main() {
   runApp(const SmartClasseApp());
@@ -30,20 +17,22 @@ class SmartClasseApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: _green,
-          primary: _green,
-          secondary: _gold,
-          surface: _surface,
+          seedColor: appGreen,
+          primary: appGreen,
+          secondary: appGold,
+          surface: appSurface,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: _green,
+          backgroundColor: appGreen,
           foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
         ),
         cardTheme: CardThemeData(
           elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
@@ -58,9 +47,12 @@ class SmartClasseApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: _green, width: 2),
+            borderSide: const BorderSide(color: appGreen, width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 14,
+          ),
         ),
       ),
       home: const ChatPage(),
@@ -76,11 +68,8 @@ class ChatMessage {
   final String? audioUrl;
   final DateTime timestamp;
 
-  ChatMessage({
-    required this.role,
-    required this.text,
-    this.audioUrl,
-  }) : timestamp = DateTime.now();
+  ChatMessage({required this.role, required this.text, this.audioUrl})
+    : timestamp = DateTime.now();
 }
 
 // ─── Définition des agents ────────────────────────────────────────────────
@@ -100,11 +89,36 @@ class _AgentDef {
 }
 
 const _agents = [
-  _AgentDef(id: 'diagnostix', label: 'DIAGNOSTIX', icon: Icons.medical_information_outlined, color: Color(0xFF1976D2)),
-  _AgentDef(id: 'pilotix', label: 'PILOTIX', icon: Icons.dashboard_outlined, color: Color(0xFF388E3C)),
-  _AgentDef(id: 'equitix', label: 'EQUITIX', icon: Icons.volunteer_activism_outlined, color: Color(0xFFE64A19)),
-  _AgentDef(id: 'parentix', label: 'PARENTIX', icon: Icons.sms_outlined, color: Color(0xFF7B1FA2)),
-  _AgentDef(id: 'orchestrator', label: 'ORCHESTRATOR', icon: Icons.auto_awesome_outlined, color: _green),
+  _AgentDef(
+    id: 'diagnostix',
+    label: 'DIAGNOSTIX',
+    icon: Icons.medical_information_outlined,
+    color: Color(0xFF1976D2),
+  ),
+  _AgentDef(
+    id: 'pilotix',
+    label: 'PILOTIX',
+    icon: Icons.dashboard_outlined,
+    color: Color(0xFF388E3C),
+  ),
+  _AgentDef(
+    id: 'equitix',
+    label: 'EQUITIX',
+    icon: Icons.volunteer_activism_outlined,
+    color: Color(0xFFE64A19),
+  ),
+  _AgentDef(
+    id: 'parentix',
+    label: 'PARENTIX',
+    icon: Icons.sms_outlined,
+    color: Color(0xFF7B1FA2),
+  ),
+  _AgentDef(
+    id: 'orchestrator',
+    label: 'ORCHESTRATOR',
+    icon: Icons.auto_awesome_outlined,
+    color: _green,
+  ),
 ];
 
 // ─── Page principale ──────────────────────────────────────────────────────
@@ -164,10 +178,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   }
 
   String get _baseUrl {
-    if (kIsWeb) return 'http://127.0.0.1:8000';
+    if (kIsWeb) return 'http://127.0.0.1:8010';
     return defaultTargetPlatform == TargetPlatform.android
-        ? 'http://10.0.2.2:8000'
-        : 'http://127.0.0.1:8000';
+        ? 'http://10.0.2.2:8010'
+        : 'http://127.0.0.1:8010';
   }
 
   @override
@@ -199,7 +213,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
   // ── Requêtes API ────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> _postJson(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _postJson(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
     if (_offlineDemo) return _offlineJson(path, body);
 
     final response = await http
@@ -221,7 +238,9 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   Map<String, dynamic> _offlineJson(String path, Map<String, dynamic> body) {
     if (path == '/agents/linguix/chat') {
       final msgs = body['messages'] as List? ?? const [];
-      final last = msgs.isNotEmpty ? msgs.last as Map<String, dynamic> : <String, dynamic>{};
+      final last = msgs.isNotEmpty
+          ? msgs.last as Map<String, dynamic>
+          : <String, dynamic>{};
       final content = (last['content'] as String?) ?? '';
       return {
         'status': 'success',
@@ -235,11 +254,14 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       return {
         'status': 'success',
         'analysis': {
-          'teacher_message': 'Mode hors ligne : Akouvi a besoin d\'un diagnostic réel.',
-          'next_action': 'Lancer les exercices de diagnostic dès la reconnexion.',
+          'teacher_message':
+              'Mode hors ligne : Akouvi a besoin d\'un diagnostic réel.',
+          'next_action':
+              'Lancer les exercices de diagnostic dès la reconnexion.',
           'retroactive_exercise': {
             'title': 'Rattrapage hors ligne',
-            'problem': 'Akouvi partage 8 sacs de sorgho et en garde 3. Combien partent au marché ?',
+            'problem':
+                'Akouvi partage 8 sacs de sorgho et en garde 3. Combien partent au marché ?',
           },
         },
       };
@@ -248,10 +270,16 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       return {
         'status': 'success',
         'dashboard': {
-          'class_overview': {'ready_count': 23, 'support_count': 18, 'average_readiness': 57.0},
+          'class_overview': {
+            'ready_count': 23,
+            'support_count': 18,
+            'average_readiness': 57.0,
+          },
           'lesson_suggestion': {
-            'class_message': '23 élèves prêts. 18 ont besoin d\'un cours différencié.',
-            'teacher_voice_prompt': 'Kossi, lancez une activité en deux groupes.',
+            'class_message':
+                '23 élèves prêts. 18 ont besoin d\'un cours différencié.',
+            'teacher_voice_prompt':
+                'Kossi, lancez une activité en deux groupes.',
             'audio': {'audio_url': null},
           },
         },
@@ -262,7 +290,8 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         'status': 'success',
         'assessment': {
           'risk_level': 'moderate',
-          'teacher_action': 'Contacter la famille et alléger la charge scolaire.',
+          'teacher_action':
+              'Contacter la famille et alléger la charge scolaire.',
           'voice_alert': {'audio_url': null},
         },
       };
@@ -272,7 +301,9 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         'status': 'success',
         'sms': {
           'status': 'dry_run',
-          'weekly_message': {'sms_text': 'Mode hors ligne : SMS prêt pour envoi.'},
+          'weekly_message': {
+            'sms_text': 'Mode hors ligne : SMS prêt pour envoi.',
+          },
         },
       };
     }
@@ -293,25 +324,50 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
     try {
       final result = await _postJson('/agents/linguix/chat', {
-        'messages': [{'role': 'user', 'content': text}],
+        'messages': [
+          {'role': 'user', 'content': text},
+        ],
         'speak': _speak,
         'language': _language,
       });
       final payload = result['result'] as Map<String, dynamic>? ?? {};
-      final assistantText = (payload['assistant_text'] as String?) ?? 'Aucune réponse';
+      final assistantText =
+          (payload['assistant_text'] as String?) ?? 'Aucune réponse';
       final audioUrl = payload['audio_url'] as String?;
-      _addMessage(ChatMessage(role: 'assistant', text: assistantText, audioUrl: audioUrl));
-      if (audioUrl != null && audioUrl.isNotEmpty) await _playServerAudio(audioUrl);
+      _addMessage(
+        ChatMessage(role: 'assistant', text: assistantText, audioUrl: audioUrl),
+      );
+      if (audioUrl != null && audioUrl.isNotEmpty)
+        await _playServerAudio(audioUrl);
     } catch (e) {
       if (!_offlineDemo) {
         setState(() => _offlineDemo = true);
-        _addMessage(ChatMessage(role: 'system', text: 'Backend indisponible. Mode hors ligne activé.'));
-        _addMessage(ChatMessage(role: 'assistant', text: 'Mode hors ligne — reçu : "$text"'));
+        _addMessage(
+          ChatMessage(
+            role: 'system',
+            text: 'Backend indisponible. Mode hors ligne activé.',
+          ),
+        );
+        _addMessage(
+          ChatMessage(
+            role: 'assistant',
+            text: 'Mode hors ligne — reçu : "$text"',
+          ),
+        );
       } else {
-        _addMessage(ChatMessage(role: 'assistant', text: 'Mode hors ligne — reçu : "$text"'));
+        _addMessage(
+          ChatMessage(
+            role: 'assistant',
+            text: 'Mode hors ligne — reçu : "$text"',
+          ),
+        );
       }
     } finally {
-      if (mounted) setState(() { _loading = false; _activeAgent = null; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _activeAgent = null;
+        });
     }
   }
 
@@ -329,36 +385,55 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
-      _addMessage(ChatMessage(role: 'system', text: 'Permission microphone refusée.'));
+      _addMessage(
+        ChatMessage(role: 'system', text: 'Permission microphone refusée.'),
+      );
       return;
     }
 
     final tempDir = await getTemporaryDirectory();
-    final filePath = '${tempDir.path}/smartclasse_${DateTime.now().millisecondsSinceEpoch}.wav';
+    final filePath =
+        '${tempDir.path}/smartclasse_${DateTime.now().millisecondsSinceEpoch}.wav';
     await _recorder.start(
-      const RecordConfig(encoder: AudioEncoder.wav, sampleRate: 16000, numChannels: 1),
+      const RecordConfig(
+        encoder: AudioEncoder.wav,
+        sampleRate: 16000,
+        numChannels: 1,
+      ),
       path: filePath,
     );
-    setState(() { _isRecording = true; _recordFile = filePath; });
+    setState(() {
+      _isRecording = true;
+      _recordFile = filePath;
+    });
   }
 
   Future<void> _sendVoice(String path) async {
     _addMessage(ChatMessage(role: 'user', text: '🎤 Message vocal envoyé'));
-    setState(() { _loading = true; _activeAgent = 'LINGUIX Voice'; });
+    setState(() {
+      _loading = true;
+      _activeAgent = 'LINGUIX Voice';
+    });
 
     try {
-      final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/agents/linguix/voice_pipeline'));
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/agents/linguix/voice_pipeline'),
+      );
       request.fields['source_language_hint'] = _language;
       request.fields['target_languages'] = 'ewe,kabyie';
       request.files.add(await http.MultipartFile.fromPath('file', path));
 
-      final streamed = await request.send().timeout(const Duration(seconds: 70));
+      final streamed = await request.send().timeout(
+        const Duration(seconds: 70),
+      );
       final response = await http.Response.fromStream(streamed);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         final pipeline = decoded['pipeline'] as Map<String, dynamic>? ?? {};
-        final transcription = pipeline['transcription'] as Map<String, dynamic>? ?? {};
+        final transcription =
+            pipeline['transcription'] as Map<String, dynamic>? ?? {};
         final transcriptionText = (transcription['text'] as String?) ?? '';
         String reply = 'Transcription : $transcriptionText';
         String? firstAudio;
@@ -369,18 +444,33 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
             final txt = first['translated_instruction'] as String?;
             final audio = first['audio'];
             if (txt != null && txt.isNotEmpty) reply = txt;
-            if (audio is Map<String, dynamic>) firstAudio = audio['audio_url'] as String?;
+            if (audio is Map<String, dynamic>)
+              firstAudio = audio['audio_url'] as String?;
           }
         }
-        _addMessage(ChatMessage(role: 'assistant', text: reply, audioUrl: firstAudio));
-        if (firstAudio != null && firstAudio.isNotEmpty) await _playServerAudio(firstAudio);
+        _addMessage(
+          ChatMessage(role: 'assistant', text: reply, audioUrl: firstAudio),
+        );
+        if (firstAudio != null && firstAudio.isNotEmpty)
+          await _playServerAudio(firstAudio);
       } else {
-        _addMessage(ChatMessage(role: 'system', text: 'Erreur API voice : ${response.statusCode}'));
+        _addMessage(
+          ChatMessage(
+            role: 'system',
+            text: 'Erreur API voice : ${response.statusCode}',
+          ),
+        );
       }
     } catch (e) {
-      _addMessage(ChatMessage(role: 'system', text: 'Erreur upload vocal : $e'));
+      _addMessage(
+        ChatMessage(role: 'system', text: 'Erreur upload vocal : $e'),
+      );
     } finally {
-      if (mounted) setState(() { _loading = false; _activeAgent = null; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _activeAgent = null;
+        });
     }
   }
 
@@ -393,7 +483,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
   Future<void> _runAgent(String agentId) async {
     if (_loading) return;
-    setState(() { _loading = true; _activeAgent = agentId.toUpperCase(); });
+    setState(() {
+      _loading = true;
+      _activeAgent = agentId.toUpperCase();
+    });
 
     try {
       switch (agentId) {
@@ -409,7 +502,11 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
           await _runOrchestrator();
       }
     } finally {
-      if (mounted) setState(() { _loading = false; _activeAgent = null; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _activeAgent = null;
+        });
     }
   }
 
@@ -422,7 +519,8 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         'language': _language,
       });
       final analysis = result['analysis'] as Map<String, dynamic>? ?? {};
-      final teacherMessage = (analysis['teacher_message'] as String?) ?? 'DIAGNOSTIX prêt.';
+      final teacherMessage =
+          (analysis['teacher_message'] as String?) ?? 'DIAGNOSTIX prêt.';
       final nextAction = (analysis['next_action'] as String?) ?? '';
       final retro = analysis['retroactive_exercise'] as Map<String, dynamic>?;
       final buf = StringBuffer('📊 DIAGNOSTIX\n$teacherMessage');
@@ -448,19 +546,27 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         'language': _language,
       });
       final dashboard = result['dashboard'] as Map<String, dynamic>? ?? {};
-      final overview = dashboard['class_overview'] as Map<String, dynamic>? ?? {};
-      final suggestion = dashboard['lesson_suggestion'] as Map<String, dynamic>? ?? {};
-      final classMessage = (suggestion['class_message'] as String?) ?? 'PILOTIX prêt.';
+      final overview =
+          dashboard['class_overview'] as Map<String, dynamic>? ?? {};
+      final suggestion =
+          dashboard['lesson_suggestion'] as Map<String, dynamic>? ?? {};
+      final classMessage =
+          (suggestion['class_message'] as String?) ?? 'PILOTIX prêt.';
       final voicePrompt = (suggestion['teacher_voice_prompt'] as String?) ?? '';
-      final audioUrl = (suggestion['audio'] as Map<String, dynamic>?)?['audio_url'] as String?;
-      _addMessage(ChatMessage(
-        role: 'assistant',
-        text: '🏫 PILOTIX — $_demoClassName\n$classMessage\n'
-            '✅ Prêts : ${overview['ready_count'] ?? 0} | '
-            '🆘 Soutien : ${overview['support_count'] ?? 0}\n'
-            '👨‍🏫 $voicePrompt',
-        audioUrl: audioUrl,
-      ));
+      final audioUrl =
+          (suggestion['audio'] as Map<String, dynamic>?)?['audio_url']
+              as String?;
+      _addMessage(
+        ChatMessage(
+          role: 'assistant',
+          text:
+              '🏫 PILOTIX — $_demoClassName\n$classMessage\n'
+              '✅ Prêts : ${overview['ready_count'] ?? 0} | '
+              '🆘 Soutien : ${overview['support_count'] ?? 0}\n'
+              '👨‍🏫 $voicePrompt',
+          audioUrl: audioUrl,
+        ),
+      );
     } catch (e) {
       _addMessage(ChatMessage(role: 'system', text: 'Erreur PILOTIX : $e'));
     }
@@ -472,18 +578,31 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         'student_id': _demoStudentId,
         'student_name': _demoStudentName,
         'language': _language,
-        'signals': {'attendance_days_missed': 4, 'participation_score': 30, 'missing_assignments': 3},
+        'signals': {
+          'attendance_days_missed': 4,
+          'participation_score': 30,
+          'missing_assignments': 3,
+        },
       });
       final assessment = result['assessment'] as Map<String, dynamic>? ?? {};
       final riskLevel = (assessment['risk_level'] as String?) ?? 'unknown';
       final teacherAction = (assessment['teacher_action'] as String?) ?? '';
-      final audioUrl = (assessment['voice_alert'] as Map<String, dynamic>?)?['audio_url'] as String?;
-      final emoji = riskLevel == 'high' ? '🔴' : riskLevel == 'moderate' ? '🟡' : '🟢';
-      _addMessage(ChatMessage(
-        role: 'assistant',
-        text: '$emoji EQUITIX — $_demoStudentName\nRisque : $riskLevel\n📋 $teacherAction',
-        audioUrl: audioUrl,
-      ));
+      final audioUrl =
+          (assessment['voice_alert'] as Map<String, dynamic>?)?['audio_url']
+              as String?;
+      final emoji = riskLevel == 'high'
+          ? '🔴'
+          : riskLevel == 'moderate'
+          ? '🟡'
+          : '🟢';
+      _addMessage(
+        ChatMessage(
+          role: 'assistant',
+          text:
+              '$emoji EQUITIX — $_demoStudentName\nRisque : $riskLevel\n📋 $teacherAction',
+          audioUrl: audioUrl,
+        ),
+      );
     } catch (e) {
       _addMessage(ChatMessage(role: 'system', text: 'Erreur EQUITIX : $e'));
     }
@@ -522,12 +641,21 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       if (exercise != null) {
         final title = (exercise['title'] as String?) ?? 'Exercice';
         final problem = (exercise['problem'] as String?) ?? '';
-        _addMessage(ChatMessage(role: 'assistant', text: '✨ ORCHESTRATOR\n📝 $title\n$problem'));
+        _addMessage(
+          ChatMessage(
+            role: 'assistant',
+            text: '✨ ORCHESTRATOR\n📝 $title\n$problem',
+          ),
+        );
       } else {
-        _addMessage(ChatMessage(role: 'assistant', text: 'ORCHESTRATOR : réponse vide.'));
+        _addMessage(
+          ChatMessage(role: 'assistant', text: 'ORCHESTRATOR : réponse vide.'),
+        );
       }
     } catch (e) {
-      _addMessage(ChatMessage(role: 'system', text: 'Erreur ORCHESTRATOR : $e'));
+      _addMessage(
+        ChatMessage(role: 'system', text: 'Erreur ORCHESTRATOR : $e'),
+      );
     }
   }
 
@@ -557,8 +685,14 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       title: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SmartClasse AI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          Text('Togo · Éducation adaptative', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          Text(
+            'SmartClasse AI',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          Text(
+            'Togo · Éducation adaptative',
+            style: TextStyle(fontSize: 11, color: Colors.white70),
+          ),
         ],
       ),
       actions: [
@@ -566,12 +700,18 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
           margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: _offlineDemo ? Colors.orange.shade700 : const Color(0xFF00C853),
+            color: _offlineDemo
+                ? Colors.orange.shade700
+                : const Color(0xFF00C853),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             _offlineDemo ? 'HORS LIGNE' : 'EN LIGNE',
-            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -592,25 +732,58 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                 const CircleAvatar(
                   backgroundColor: _gold,
                   radius: 28,
-                  child: Text('SC', style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 20)),
+                  child: Text(
+                    'SC',
+                    style: TextStyle(
+                      color: _green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 10),
-                const Text('SmartClasse AI Togo', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                Text('v0.1.0 · Gemma 4', style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 12)),
+                const Text(
+                  'SmartClasse AI Togo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'v0.1.0 · Gemma 4',
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(180),
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('LANGUE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 1)),
+            child: Text(
+              'LANGUE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
+                letterSpacing: 1,
+              ),
+            ),
           ),
-          ..._languages.map((lang) => RadioListTile<String>(
-            title: Text(lang.$2),
-            value: lang.$1,
-            groupValue: _language,
-            activeColor: _green,
-            onChanged: (v) { setState(() => _language = v!); Navigator.pop(context); },
-          )),
+          ..._languages.map(
+            (lang) => RadioListTile<String>(
+              title: Text(lang.$2),
+              value: lang.$1,
+              groupValue: _language,
+              activeColor: _green,
+              onChanged: (v) {
+                setState(() => _language = v!);
+                Navigator.pop(context);
+              },
+            ),
+          ),
           const Divider(),
           SwitchListTile(
             title: const Text('Réponse audio (TTS)'),
@@ -632,7 +805,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
           ListTile(
             leading: const Icon(Icons.delete_outline, color: Colors.red),
             title: const Text('Effacer la conversation'),
-            onTap: () { setState(() => _messages.clear()); Navigator.pop(context); },
+            onTap: () {
+              setState(() => _messages.clear());
+              Navigator.pop(context);
+            },
           ),
         ],
       ),
@@ -650,18 +826,27 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
           final agent = _agents[i];
-          final isActive = _activeAgent == agent.id.toUpperCase() || _activeAgent == agent.label;
+          final isActive =
+              _activeAgent == agent.id.toUpperCase() ||
+              _activeAgent == agent.label;
           return FilledButton.tonalIcon(
             style: FilledButton.styleFrom(
-              backgroundColor: isActive ? agent.color : agent.color.withAlpha(24),
+              backgroundColor: isActive
+                  ? agent.color
+                  : agent.color.withAlpha(24),
               foregroundColor: isActive ? Colors.white : agent.color,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               visualDensity: VisualDensity.compact,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
             onPressed: _loading ? null : () => _runAgent(agent.id),
             icon: Icon(agent.icon, size: 16),
-            label: Text(agent.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            label: Text(
+              agent.label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
           );
         },
       ),
@@ -677,13 +862,27 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
             Container(
               width: 80,
               height: 80,
-              decoration: const BoxDecoration(color: _greenLight, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: _greenLight,
+                shape: BoxShape.circle,
+              ),
               child: const Icon(Icons.school_outlined, size: 40, color: _green),
             ),
             const SizedBox(height: 16),
-            const Text('Bienvenue sur SmartClasse', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _green)),
+            const Text(
+              'Bienvenue sur SmartClasse',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: _green,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('Écrivez un message ou sélectionnez un agent ci-dessus.', style: TextStyle(color: Colors.grey.shade600, fontSize: 14), textAlign: TextAlign.center),
+            Text(
+              'Écrivez un message ou sélectionnez un agent ci-dessus.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       );
@@ -711,7 +910,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
               border: Border.all(color: Colors.orange.shade200),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(message.text, style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+            child: Text(
+              message.text,
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+            ),
           ),
         ),
       );
@@ -721,22 +923,35 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isUser) ...[
             CircleAvatar(
               radius: 16,
               backgroundColor: _greenLight,
-              child: const Text('AI', style: TextStyle(fontSize: 10, color: _green, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'AI',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.75,
+                  ),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isUser ? _green : Colors.white,
@@ -746,19 +961,35 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
                       bottomLeft: Radius.circular(isUser ? 18 : 4),
                       bottomRight: Radius.circular(isUser ? 4 : 18),
                     ),
-                    boxShadow: [BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 4, offset: const Offset(0, 2))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(13),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     message.text,
-                    style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 14, height: 1.4),
+                    style: TextStyle(
+                      color: isUser ? Colors.white : Colors.black87,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
                   ),
                 ),
                 if (message.audioUrl != null && message.audioUrl!.isNotEmpty)
                   TextButton.icon(
-                    style: TextButton.styleFrom(foregroundColor: _green, padding: const EdgeInsets.symmetric(horizontal: 4)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _green,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
                     onPressed: () => _playServerAudio(message.audioUrl!),
                     icon: const Icon(Icons.play_circle_outline, size: 18),
-                    label: const Text('Écouter', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      'Écouter',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                 Padding(
                   padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
@@ -792,12 +1023,21 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
           const SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(_green)),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation(_green),
+            ),
           ),
           const SizedBox(width: 10),
           Text(
-            _activeAgent != null ? '$_activeAgent en cours...' : 'Chargement...',
-            style: const TextStyle(fontSize: 13, color: _green, fontWeight: FontWeight.w500),
+            _activeAgent != null
+                ? '$_activeAgent en cours...'
+                : 'Chargement...',
+            style: const TextStyle(
+              fontSize: 13,
+              color: _green,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -809,7 +1049,13 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 8, offset: const Offset(0, -2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(13),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -846,7 +1092,11 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
               builder: (context, child) {
                 return Material(
                   color: _isRecording
-                      ? Color.lerp(Colors.red.shade600, Colors.red.shade400, _micPulseController.value)!
+                      ? Color.lerp(
+                          Colors.red.shade600,
+                          Colors.red.shade400,
+                          _micPulseController.value,
+                        )!
                       : _greenLight,
                   borderRadius: BorderRadius.circular(24),
                   child: InkWell(

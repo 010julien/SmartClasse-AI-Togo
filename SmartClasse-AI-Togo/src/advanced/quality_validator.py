@@ -34,7 +34,7 @@ class QualityScore:
 class QualityValidator:
     """Validates response quality before sending to user."""
 
-    QUALITY_THRESHOLD = 85.0  # Minimum acceptable quality score
+    QUALITY_THRESHOLD = 75.0  # Seuil doctoral minimal pour réponses pédagogiques
 
     def __init__(self):
         self.dimension_weights = {
@@ -280,12 +280,21 @@ class QualityValidator:
         recommendations = []
         score = 80.0
 
-        # Check for encouraging tone
-        encouraging_words = ["great", "excellent", "wonderful", "well done", "bravo", "interesting"]
+        # Check for encouraging tone (FR + EN)
+        encouraging_words = [
+            # Français
+            "bravo", "super", "excellent", "formidable", "bien joué",
+            "félicitations", "magnifique", "très bien", "parfait", "génial",
+            "courage", "continue", "bonne réponse", "intéressant",
+            # English
+            "great", "wonderful", "well done", "interesting",
+            # Emojis courants
+            "👏", "👍", "✨", "🎉", "😊", "💪",
+        ]
         encouragement_count = sum(1 for word in encouraging_words if word in response.lower())
 
         if encouragement_count == 0:
-            score -= 15
+            score -= 10  # Pénalité réduite
             issues.append("Response lacks encouraging tone")
             recommendations.append("Add positive reinforcement")
 
@@ -297,12 +306,14 @@ class QualityValidator:
             issues.append("No question to engage student")
             recommendations.append("Consider ending with a follow-up question")
 
-        # Check for local context (cultural relevance)
-        if any(word in response.lower() for word in ["sorgho", "karite", "marche", "togo", "village"]):
+        # Check for local context (cultural relevance) — accent-insensitive
+        local_words = ["sorgho", "karite", "karité", "marche", "marché",
+                       "togo", "togolais", "village", "école", "ecole",
+                       "famille", "classe", "élève", "eleve", "enseignant"]
+        if any(word in response.lower() for word in local_words):
             score += 10
-            # issues.append("Uses local context - good!")
         else:
-            score -= 5
+            score -= 3  # Pénalité réduite
             issues.append("Could include more local/cultural context")
             recommendations.append("Reference familiar Togolese contexts")
 

@@ -416,7 +416,7 @@ Return ONLY the translated sentence, no commentary.
                 messages=messages,
                 language=language,
                 user_level=user_level,
-                max_retries_on_quality=2,  # Retry up to 2 times if quality is low
+                max_retries_on_quality=1,  # 1 retry acceptable pour agents batch (ADAPTIX/DIAGNOSTIX)
             )
 
             # Extract response text
