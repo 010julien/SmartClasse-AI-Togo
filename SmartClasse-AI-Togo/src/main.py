@@ -41,13 +41,22 @@ app = FastAPI(
 os.makedirs(os.path.join("data", "audio"), exist_ok=True)
 app.mount("/audio", StaticFiles(directory=os.path.join("data", "audio")), name="audio")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if settings.DEBUG:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 adaptix = AdaptixAgent()
 diagnostix = DiagnostixAgent()
@@ -328,6 +337,151 @@ async def linguix_chat(
     finally:
         if audio_path and os.path.exists(audio_path):
             os.remove(audio_path)
+
+
+class LinguixStreamRequest(BaseModel):
+    messages: List[Dict[str, Any]] = []
+    language: str = "french"
+    user_level: str = "CE1"
+    session_id: Optional[str] = None
+    user_name: str = "Student"
+
+
+# Instance partagée du pipeline avancé (réutilise la même mémoire)
+from src.advanced.nlu_engine import NLUEngine
+from src.advanced.memory_manager import MemoryManager
+from src.advanced.prompts import AdvancedPromptEngineering
+
+_stream_nlu = NLUEngine()
+_stream_memory = MemoryManager()
+_stream_prompts = AdvancedPromptEngineering()
+
+
+@app.post("/agents/linguix/chat/stream")
+async def linguix_chat_stream(request: LinguixStreamRequest):
+    """Streaming chat endpoint avec pipeline avancé intégré.
+
+    Exécute NLU + Memory + PromptEngineering AVANT le streaming,
+    puis stream les tokens SSE depuis Ollama,
+    puis met à jour la mémoire APRÈS le stream.
+    """
+    import json as _json
+    import uuid
+
+    try:
+        import ollama as _ollama
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Ollama non disponible")
+
+    # ── Phase 1 : Extraire le dernier message utilisateur ────────────────
+    last_user_message = ""
+    for msg in reversed(request.messages):
+        if msg.get("role") == "user":
+            last_user_message = (msg.get("content") or "").strip()
+            break
+
+    if not last_user_message:
+        raise HTTPException(status_code=400, detail="Aucun message utilisateur")
+
+    # ── Phase 2 : Session et mémoire ─────────────────────────────────────
+    session_id = request.session_id or f"session_{uuid.uuid4().hex[:8]}"
+    user_id = f"user_{session_id[-8:]}"
+    user_name = request.user_name if request.user_name != "Student" else "Élève"
+
+    session_init = _stream_memory.initialize_session(session_id, user_id, user_name)
+    user_profile = session_init["user_profile"]
+
+    # Récupérer le contexte mémoire (tours précédents de cette session)
+    memory_context = _stream_memory.get_context_for_response(session_id, user_id)
+    user_context = memory_context.get("user", {})
+    user_context.update({
+        "user_name": user_name,
+        "educational_level": request.user_level,
+        "preferred_language": request.language,
+    })
+
+    logger.info(
+        f"STREAM | Session: {session_id} | User: {user_name} | "
+        f"Level: {request.user_level} | History: {len(request.messages)} msgs | "
+        f"Message: {last_user_message[:50]}..."
+    )
+
+    # ── Phase 3 : NLU — classification d'intent ─────────────────────────
+    nlu_result = _stream_nlu.analyze(last_user_message, request.messages)
+    intent = nlu_result["intent"]
+
+    logger.info(f"STREAM NLU | Intent: {intent.type.value} (conf: {nlu_result['analysis_confidence']:.2f})")
+
+    # ── Phase 4 : Prompt Engineering sophistiqué ─────────────────────────
+    system_prompt = _stream_prompts.build_system_prompt(
+        intent, user_context, memory_context.get("conversation")
+    )
+    user_message_with_context = _stream_prompts.build_user_message_with_context(
+        last_user_message,
+        intent,
+        user_context,
+        memory_context.get("conversation_summary"),
+    )
+
+    # ── Phase 5 : Construire les messages LLM ────────────────────────────
+    llm_messages = [
+        {"role": "system", "content": system_prompt},
+    ]
+    # Inclure l'historique conversationnel (sans le dernier message user, qui est enrichi)
+    for msg in request.messages[:-1]:
+        if msg.get("role") in ("user", "assistant"):
+            llm_messages.append({"role": msg["role"], "content": msg.get("content", "")})
+    # Ajouter le message utilisateur enrichi
+    llm_messages.append({"role": "user", "content": user_message_with_context})
+
+    logger.info(f"STREAM | LLM messages: {len(llm_messages)} | System prompt: {len(system_prompt)} chars")
+
+    # ── Phase 6 : Streaming SSE ──────────────────────────────────────────
+    async def event_generator():
+        full_response = []
+        try:
+            client = _ollama.Client(
+                host=settings.OLLAMA_BASE_URL,
+                timeout=settings.OLLAMA_TIMEOUT,
+            )
+            stream = client.chat(
+                model=settings.LLM_MODEL,
+                messages=llm_messages,
+                stream=True,
+                options={
+                    "temperature": settings.LLM_TEMPERATURE,
+                    "num_predict": settings.LLM_MAX_TOKENS,
+                    "num_ctx": settings.LLM_CONTEXT_WINDOW,
+                },
+            )
+            for chunk in stream:
+                token = chunk.get("message", {}).get("content", "")
+                if token:
+                    full_response.append(token)
+                    data = _json.dumps({"token": token}, ensure_ascii=False)
+                    yield f"data: {data}\n\n"
+
+            # ── Phase 7 : Mise à jour mémoire après streaming ────────────
+            assistant_text = "".join(full_response)
+            if assistant_text:
+                _stream_memory.add_turn(session_id, user_id, last_user_message, assistant_text)
+                logger.info(f"STREAM | Memory updated | Session: {session_id} | Response: {len(assistant_text)} chars")
+
+            # Signal de fin
+            yield f"data: {_json.dumps({'done': True})}\n\n"
+        except Exception as exc:
+            logger.error("Stream error: %s", exc, exc_info=True)
+            yield f"data: {_json.dumps({'error': str(exc)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/agents/linguix/translate_instruction")

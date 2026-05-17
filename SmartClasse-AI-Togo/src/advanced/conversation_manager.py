@@ -49,7 +49,7 @@ class ConversationManager:
         messages: List[Dict[str, str]],
         language: str = "french",
         user_level: str = "CE1",
-        max_retries_on_quality: int = 2,
+        max_retries_on_quality: int = 0,
     ) -> ConversationResponse:
         """Process a conversation turn with full pipeline."""
 
@@ -135,7 +135,7 @@ class ConversationManager:
                     messages=llm_messages,
                     model=None,  # Use default from config
                     temperature=0.3,  # Moderate temperature for consistency
-                    max_tokens=1024,
+                    max_tokens=256,
                     retries=2,
                 )
 
