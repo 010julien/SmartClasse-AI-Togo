@@ -164,10 +164,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   }
 
   String get _baseUrl {
-    if (kIsWeb) return 'http://127.0.0.1:8010';
+    if (kIsWeb) return 'http://127.0.0.1:8000';
     return defaultTargetPlatform == TargetPlatform.android
-        ? 'http://10.0.2.2:8010'
-        : 'http://127.0.0.1:8010';
+        ? 'http://10.0.2.2:8000'
+        : 'http://127.0.0.1:8000';
   }
 
   @override
