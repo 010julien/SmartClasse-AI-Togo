@@ -17,7 +17,7 @@
 
 ```
 1. Go to: https://github.com/new
-2. Repository name: EduPath-AI-Togo
+2. Repository name: SmartClasse-AI-Togo
 3. Description: Offline Adaptive Education System for Togo
 4. Visibility: PUBLIC ← CRITICAL
 5. License: Apache 2.0 ← CRITICAL
@@ -29,16 +29,16 @@
 
 ```powershell
 # Open PowerShell
-cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\EduPath-AI-Togo"
+cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\SmartClasse-AI-Togo"
 
 # Copy these commands EXACTLY:
 git init
 git add .
-git commit -m "Initial commit: EduPath AI - Kaggle Gemma 4 Good Hackathon"
+git commit -m "Initial commit: SmartClasse AI Togo - Kaggle Gemma 4 Good Hackathon"
 git branch -M main
 
 # GitHub will show you these after repo creation:
-git remote add origin https://github.com/[YOUR_USERNAME]/EduPath-AI-Togo.git
+git remote add origin https://github.com/[YOUR_USERNAME]/SmartClasse-AI-Togo.git
 git push -u origin main
 
 # Verify:
@@ -79,7 +79,7 @@ ollama list
 
 ```powershell
 # In project directory
-cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\EduPath-AI-Togo"
+cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\SmartClasse-AI-Togo"
 
 # Create virtual environment
 python -m venv venv
@@ -127,7 +127,7 @@ ollama serve
 
 ```powershell
 # Terminal 2
-cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\EduPath-AI-Togo"
+cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\SmartClasse-AI-Togo"
 venv\Scripts\activate
 uvicorn src.main:app --reload --port 8000
 
@@ -140,7 +140,7 @@ uvicorn src.main:app --reload --port 8000
 
 ```powershell
 # Terminal 3
-cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\EduPath-AI-Togo"
+cd "c:\Users\DELL\Desktop\SmartClasse-AI-Togo\SmartClasse-AI-Togo"
 
 # Health check
 curl http://localhost:8000/health
@@ -259,7 +259,7 @@ After each step, verify:
    shows "You've Joined"
 
 # After GitHub
-✅ https://github.com/[USERNAME]/EduPath-AI-Togo
+✅ https://github.com/[USERNAME]/SmartClasse-AI-Togo
    shows code in repo
 
 # After Ollama
@@ -307,4 +307,4 @@ After each step, verify:
 
 **GO GO GO! 🚀 You've got this! The hardest part is done (architecture). Now it's just execution.**
 
-Next update: Tomorrow with Jour 2 detailed plan (ADAPTIX + LINGUIX full integration with real Gemma 4)
+Next update: Tomorrow with Jour 2 detailed plan (ADAPTIX + LINGUIX full integration with real Gemma 4 — SmartClasse AI Togo)
